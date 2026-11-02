@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaccine Public Safety Verification — ColdChain</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .verify-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 560px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      text-align: center;
+      position: relative;
+    }
+    .cert-seal {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin: 0 auto 1.5rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+    }
+    .seal-safe {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+    }
+    .seal-risk {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+    }
+    .seal-discard {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+    }
+    .verdict-banner {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      padding: 0.85rem 1.5rem;
+      border-radius: var(--radius-full);
+      margin: 1.5rem 0;
+      letter-spacing: 0.02em;
+    }
+    .cert-table {
+      width: 100%;
+      margin-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      text-align: left;
+    }
+    .cert-table tr td {
+      padding: 0.85rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .cert-table td:first-child {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .cert-table td:last-child {
+      text-align: right;
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="verify-card" id="cardContainer">
+    <div class="cert-seal seal-safe" id="certSeal">
+      <i data-lucide="shield-check" style="width: 38px; height: 38px; color: white;"></i>
+    </div>
+
+    <div style="font-size: 0.8rem; color: var(--accent-cyan); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem;">
+      Official Cold-Chain Safety Record
+    </div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800;" id="batchName">
+      Verifying Batch...
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem;" id="batchType">Public Health Verification Portal (No Login Required)</p>
+
+    <!-- Large Safety Verdict Banner -->
+    <div class="verdict-banner status-safe" id="verdictBanner">
+      CHECKING DIGITAL CERTIFICATE...
+    </div>
+
+    <table class="cert-table">
+      <tbody>
+        <tr>
+          <td>Batch Serial ID</td>
+          <td id="certBatchId">---</td>
+        </tr>
+        <tr>
+          <td>Heat Exposure Budget</td>
+          <td id="certBudget">---</td>
+        </tr>
+        <tr>
+          <td>Expiry Date</td>
+          <td id="certExpiry">---</td>
+        </tr>
+        <tr>
+          <td>Storage Location</td>
+          <td id="certFridge">---</td>
+        </tr>
+        <tr>
+          <td>Current Fridge Temp</td>
+          <td id="certTemp">---</td>
+        </tr>
+        <tr>
+          <td>Cryptographic Status</td>
+          <td style="color: var(--safe-green);">VERIFIED ON-CHAIN</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 2rem; font-size: 0.75rem; color: var(--text-dim);">
+      Data digitally attested via ColdChain Cryptographic Ledger & HMAC-SHA256 telemetry.
+    </div>
+  </div>
+
+  <script>
+    async function fetchVerification() {
+      // Get identifier from pathname /verify/:identifier
+      const parts = window.location.pathname.split('/');
+      const identifier = parts[parts.length - 1] || 'BATCH-CV19-001';
+
+      try {
+        const res = await fetch(`/api/batches/public-verify/${encodeURIComponent(identifier)}`);
+        const data = await res.json();
+
+        if (!data.verified) {
+          document.getElementById('batchName').textContent = 'Verification Failed';
+          document.getElementById('verdictBanner').textContent = 'BATCH NOT FOUND';
+          document.getElementById('verdictBanner').className = 'verdict-banner status-breach';
+          return;
+        }
+
+        document.getElementById('batchName').textContent = data.name;
+        document.getElementById('batchType').textContent = `${data.type} • Batch: ${data.batchId}`;
+        document.getElementById('certBatchId').textContent = data.batchId;
+        document.getElementById('certBudget').textContent = `${data.heatExposure.remainingMinutes} mins left (${data.heatExposure.remainingPercent}%)`;
+        document.getElementById('certExpiry').textContent = data.expiryDate;
+        document.getElementById('certFridge').textContent = data.fridgeLocation;
+        document.getElementById('certTemp').textContent = `${data.currentStorageTemp}°C`;
+
+        const seal = document.getElementById('certSeal');
+        const banner = document.getElementById('verdictBanner');
+
+        if (data.status === 'Safe') {
+          seal.className = 'cert-seal seal-safe';
+          banner.className = 'verdict-banner status-safe';
+          banner.textContent = '✔ SAFE & POTENT TO ADMINISTER';
+        } else if (data.status === 'At Risk') {
+          seal.className = 'cert-seal seal-risk';
+          banner.className = 'verdict-banner status-warning';
+          banner.textContent = '⚠ AT RISK (REDUCED SHELF LIFE)';
+        } else {
+          seal.className = 'cert-seal seal-discard';
+          banner.className = 'verdict-banner status-breach';
+          banner.textContent = '✘ DO NOT USE — HEAT EXPOSURE EXCEEDED';
+        }
+
+        lucide.createIcons();
+      } catch (err) {
+        document.getElementById('batchName').textContent = 'Network Error';
+      }
+    }
+
+    fetchVerification();
+  </script>
+</body>
+</html>

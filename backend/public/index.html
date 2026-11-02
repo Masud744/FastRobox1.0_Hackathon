@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ColdChain — Vaccine & Medicine Storage Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js for Live Telemetry & Forecasts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- QRCode Generator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</head>
+<body>
+
+  <!-- =========================================================================
+       HEADER
+       ========================================================================= -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <i data-lucide="shield-check"></i>
+      </div>
+      <div class="brand-title">
+        <h1>ColdChain</h1>
+        <p>Vaccine & Medicine Storage Monitor</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-center">
+      <button class="nav-tab active" data-tab="dashboard">
+        <i data-lucide="layout-dashboard"></i> Live Monitor
+      </button>
+      <button class="nav-tab" data-tab="inventory">
+        <i data-lucide="package-check"></i> Vaccine Batches
+      </button>
+      <button class="nav-tab" data-tab="ai-relocation">
+        <i data-lucide="sparkles"></i> AI Relocation
+      </button>
+      <button class="nav-tab" data-tab="audit">
+        <i data-lucide="link"></i> Hash Chain Audit
+      </button>
+      <a href="/verify/BATCH-CV19-001" target="_blank" class="nav-tab" style="text-decoration: none;">
+        <i data-lucide="qr-code"></i> Public QR Portal
+      </a>
+    </nav>
+
+    <!-- Right Controls: Live status & RBAC Role -->
+    <div class="nav-right">
+      <div class="live-badge">
+        <div class="pulse-dot"></div>
+        <span id="wsStatus">LIVE 5s</span>
+      </div>
+
+      <div class="user-role-badge" id="roleBadgeBtn" onclick="openLoginModal()">
+        <i data-lucide="user"></i>
+        <span id="currentUsername">Admin</span>
+        <span class="role-tag role-admin" id="currentRoleTag">Admin</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       GLOBAL ALARM BANNER (Door >60s / Discard LED Latch)
+       ========================================================================= -->
+  <div class="alarm-banner" id="globalAlarmBanner">
+    <div class="alarm-banner-content">
+      <i data-lucide="alert-octagon" style="width: 24px; height: 24px;"></i>
+      <span id="globalAlarmText">CRITICAL ALARM: Heat budget expired or door open breach detected!</span>
+    </div>
+    <button class="alarm-reset-btn" id="alarmResetBtn" onclick="handleAdminAlarmReset()">
+      Reset Latched Alarm (Admin)
+    </button>
+  </div>
+
+  <!-- =========================================================================
+       MAIN CONTENT
+       ========================================================================= -->
+  <main>
+
+    <!-- =======================================================================
+         TAB 1: LIVE DUAL FRIDGE DIGITAL TWINS
+         ======================================================================= -->
+    <div class="tab-pane active" id="tab-dashboard">
+      <div class="fridge-grid" id="fridgeGrid">
+        <!-- Fridge 1 Card -->
+        <div class="fridge-card" id="card-fridge_1">
+          <div class="fridge-header">
+            <div class="fridge-title">
+              <h2>Main Cold Room (Fridge 1)</h2>
+              <p>ESP32 Primary Storage Unit</p>
+            </div>
+            <div class="status-badge status-safe" id="status-fridge_1">
+              <i data-lucide="check-circle-2"></i> SAFE (2–8°C)
+            </div>
+          </div>
+
+          <!-- Circular Gauge & Large Temp -->
+          <div class="temp-gauge-container">
+            <div class="temp-numeric">
+              <div class="temp-value" id="temp-fridge_1">4.2<span class="temp-unit">°C</span></div>
+              <div class="temp-range-badge">TARGET: 3.0°C – 7.0°C</div>
+            </div>
+
+            <div class="circular-gauge">
+              <svg viewBox="0 0 100 100" width="130" height="130">
+                <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                <circle class="gauge-fill" id="gauge-fridge_1" cx="50" cy="50" r="40"
+                  stroke-dasharray="251.2" stroke-dashoffset="125.6"></circle>
+              </svg>
+              <div class="gauge-center-icon">
+                <i data-lucide="thermometer-snowflake" style="color: var(--accent-cyan); width: 22px;"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-metrics Grid -->
+          <div class="sub-metrics-grid">
+            <div class="sub-metric-card">
+              <div class="sub-metric-icon">
+                <i data-lucide="fan" id="compIcon-fridge_1"></i>
+              </div>
+              <div class="sub-metric-info">
+                <h4>Compressor</h4>
+                <p id="comp-fridge_1">IDLE (OFF)</p>
+              </div>
+            </div>
+
+            <div class="sub-metric-card">
+              <div class="sub-metric-icon">
+                <i data-lucide="door-closed" id="doorIcon-fridge_1"></i>
+              </div>
+              <div class="sub-metric-info">
+                <h4>Door Switch</h4>
+                <p id="door-fridge_1">CLOSED</p>
+              </div>
+            </div>
+
+            <div class="sub-metric-card">
+              <div class="sub-metric-icon">
+                <i data-lucide="zap" id="powerIcon-fridge_1" style="color: var(--safe-green);"></i>
+              </div>
+              <div class="sub-metric-info">
+                <h4>Power Source</h4>
+                <p id="power-fridge_1">AC GRID</p>
+              </div>
+            </div>
+
+            <div class="sub-metric-card">
+              <div class="sub-metric-icon">
+                <i data-lucide="activity" style="color: var(--accent-cyan);"></i>
+              </div>
+              <div class="sub-metric-info">
+                <h4>Compressor Health</h4>
+                <p id="healthScore-fridge_1">95 / 100</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fridge 2 Card -->
+        <div class="fridge-card" id="card-fridge_2">
+          <div class="fridge-header">
+            <div class="fridge-title">
+              <h2>Relocation Reserve (Fridge 2)</h2>
+              <p>ESP32 Auxiliary Secondary Unit</p>
+            </div>
+            <div class="status-badge status-safe" id="status-fridge_2">
+              <i data-lucide="check-circle-2"></i> SAFE (2–8°C)
+            </div>
+          </div>
+
+          <!-- Circular Gauge & Large Temp -->
+          <div class="temp-gauge-container">
+            <div class="temp-numeric">
+              <div class="temp-value" id="temp-fridge_2">3.8<span class="temp-unit">°C</span></div>
+              <div class="temp-range-badge">TARGET: 3.0°C – 7.0°C</div>
+            </div>
+
+            <div class="circular-gauge">
+              <svg viewBox="0 0 100 100" width="130" height="130">
+                <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                <circle class="gauge-fill" id="gauge-fridge_2" cx="50" cy="50" r="40"
+                  stroke-dasharray="251.2" stroke-dashoffset="135.0"></circle>
+              </svg>
+              <div class="gauge-center-icon">
+                <i data-lucide="thermometer-snowflake" style="color: var(--accent-cyan); width: 22px;"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-metrics Grid -->
+          <div class="sub-metrics-grid">
+            <div class="sub-metric-card">
+              <div class="sub-metric-icon">
+                <i data-lucide="fan" id="compIcon-fridge_2"></i>
+              </div>
+              <div class="sub-metric-info">
+                <h4>Compressor</h4>
+                <p id="comp-fridge_2">IDLE (OFF)</p>
+              </div>
+            </div>
+
+            <div class="sub-metric-card">
+              <div class="sub-metric-icon">
+                <i data-lucide="door-closed" id="doorIcon-fridge_2"></i>
+              </div>
+              <div class="sub-metric-info">
+                <h4>Door Switch</h4>
+                <p id="door-fridge_2">CLOSED</p>
+              </div>
+            </div>
+
+            <div class="sub-metric-card">
+              <div class="sub-metric-icon">
+                <i data-lucide="zap" id="powerIcon-fridge_2" style="color: var(--safe-green);"></i>
+              </div>
+              <div class="sub-metric-info">
+                <h4>Power Source</h4>
+                <p id="power-fridge_2">AC GRID</p>
+              </div>
+            </div>
+
+            <div class="sub-metric-card">
+              <div class="sub-metric-icon">
+                <i data-lucide="activity" style="color: var(--accent-cyan);"></i>
+              </div>
+              <div class="sub-metric-info">
+                <h4>Compressor Health</h4>
+                <p id="healthScore-fridge_2">98 / 100</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Telemetry & AI 30-Min Prediction Row -->
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="card-title">
+            <h3><i data-lucide="trending-up" style="color: var(--accent-cyan);"></i> Temperature Telemetry & 30-Minute AI Forecast</h3>
+            <span class="status-badge status-safe" id="aiForecastBadge">Stable Trajectory</span>
+          </div>
+          <div style="height: 280px;">
+            <canvas id="telemetryChart"></canvas>
+          </div>
+        </div>
+
+        <div class="analytics-card">
+          <div class="card-title">
+            <h3><i data-lucide="cpu" style="color: #3b82f6;"></i> Compressor Predictive Health</h3>
+          </div>
+          <div style="text-align: center; padding: 1.5rem 0;">
+            <div style="font-family: var(--font-heading); font-size: 3.5rem; font-weight: 800; color: #ffffff;" id="compHealthBigScore">
+              95<span style="font-size: 1.5rem; color: var(--accent-cyan);">/100</span>
+            </div>
+            <p id="compHealthDiagnostic" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
+              Cooling rate: -0.15°C/min (Nominal). No mechanical wear detected.
+            </p>
+          </div>
+          <button class="action-btn" style="width: 100%; justify-content: center;" onclick="openAIReportModal()">
+            <i data-lucide="file-text"></i> View AI Model Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =======================================================================
+         TAB 2: VACCINE INVENTORY & HEAT BUDGET
+         ======================================================================= -->
+    <div class="tab-pane" id="tab-inventory">
+      <div class="inventory-header">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem;">Vaccine Batch Inventory</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Heat exposure tracking (60-min budget, >12°C counts double)</p>
+        </div>
+        <button class="action-btn" onclick="loadInventoryData()">
+          <i data-lucide="refresh-cw"></i> Refresh Inventory
+        </button>
+      </div>
+
+      <div class="batch-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Batch ID / QR</th>
+              <th>Vaccine Name & Type</th>
+              <th>Current Fridge</th>
+              <th>Heat-Exposure Budget</th>
+              <th>Status</th>
+              <th>Expiry Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="batchTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =======================================================================
+         TAB 3: AI RELOCATION & SMART BREACH PREDICTION
+         ======================================================================= -->
+    <div class="tab-pane" id="tab-ai-relocation">
+      <div class="ai-recommendation-banner" id="relocationBanner">
+        <div class="ai-recommendation-content">
+          <h3 id="relocationTitle">AI Relocation Engine Active</h3>
+          <p id="relocationReason" style="color: var(--text-muted); font-size: 0.95rem;">
+            Both fridges are currently operating within safe thermal parameters (2–8°C).
+          </p>
+        </div>
+        <button class="one-click-relocate-btn" id="oneClickRelocateBtn" style="display: none;" onclick="executeOneClickRelocation()">
+          <i data-lucide="shuffle"></i> 1-Click Relocate All Batches
+        </button>
+      </div>
+
+      <div class="analytics-card" style="margin-bottom: 2rem;">
+        <div class="card-title">
+          <h3><i data-lucide="compass" style="color: var(--accent-cyan);"></i> Autonomous Evacuation Assessment</h3>
+        </div>
+        <div id="relocationPlanDetails" style="color: var(--text-muted); font-size: 0.95rem;">
+          No active breach risks. All vaccine batches are safely stored in their optimal compartments.
+        </div>
+      </div>
+    </div>
+
+    <!-- =======================================================================
+         TAB 4: CRYPTOGRAPHIC HASH CHAIN AUDIT LEDGER
+         ======================================================================= -->
+    <div class="tab-pane" id="tab-audit">
+      <div class="ledger-controls">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem;">Cryptographic Hash-Chain Ledger</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Immutable SHA-256 blockchain-style audit trail of all cold chain events</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="tamper-test-btn" onclick="handleSimulateTamper()">
+            <i data-lucide="bug"></i> Simulate DB Tamper (Judges Test)
+          </button>
+          <button class="verify-btn" onclick="handleVerifyChainIntegrity()">
+            <i data-lucide="shield-check"></i> Verify Integrity
+          </button>
+        </div>
+      </div>
+
+      <div class="batch-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Block #</th>
+              <th>Timestamp</th>
+              <th>Event Type</th>
+              <th>Actor</th>
+              <th>Previous Hash (SHA-256)</th>
+              <th>Current Hash (SHA-256)</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- =========================================================================
+       MODALS
+       ========================================================================= -->
+
+  <!-- 1. LOGIN / ROLE SWITCHER MODAL -->
+  <div class="modal-backdrop" id="loginModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Switch Role & Login</h3>
+        <button class="modal-close-btn" onclick="closeLoginModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Select User / Role</label>
+        <select id="loginRoleSelect" onchange="autoFillLogin()">
+          <option value="admin">Admin (System Controls, Alarm Reset)</option>
+          <option value="pharmacist">Pharmacist (Batch Inventory, 1-Click Relocation)</option>
+          <option value="inspector">Inspector (Read-only, Audit Verification)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="loginUsername" value="admin">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" value="Admin@123">
+      </div>
+      <button class="btn-primary" onclick="handleLoginSubmit()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- 2. QR CODE DISPLAY MODAL -->
+  <div class="modal-backdrop" id="qrModal">
+    <div class="modal-box" style="text-align: center;">
+      <div class="modal-header">
+        <h3 id="qrModalTitle">Vaccine Batch QR Code</h3>
+        <button class="modal-close-btn" onclick="closeQrModal()">&times;</button>
+      </div>
+      <div style="padding: 1.5rem 0;">
+        <canvas id="qrCanvas" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);"></canvas>
+      </div>
+      <p id="qrModalDesc" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;"></p>
+      <a id="qrPublicLink" href="#" target="_blank" class="btn-primary" style="display: inline-block; text-decoration: none;">
+        Open Public Verification Certificate (No Login)
+      </a>
+    </div>
+  </div>
+
+  <!-- 3. AI REPORT MODAL -->
+  <div class="modal-backdrop" id="aiReportModal">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-header">
+        <h3>AI Model Research & Technical Report</h3>
+        <button class="modal-close-btn" onclick="closeAIReportModal()">&times;</button>
+      </div>
+      <div id="aiReportContent" style="max-height: 480px; overflow-y: auto; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+        <!-- Filled via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. AUDIT INTEGRITY RESULTS MODAL -->
+  <div class="modal-backdrop" id="integrityModal">
+    <div class="modal-box" style="text-align: center;">
+      <div class="modal-header">
+        <h3 id="integrityModalTitle">Cryptographic Chain Verification</h3>
+        <button class="modal-close-btn" onclick="closeIntegrityModal()">&times;</button>
+      </div>
+      <div id="integrityModalIcon" style="margin: 1rem 0;"></div>
+      <h4 id="integrityModalHeader" style="font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 0.5rem;"></h4>
+      <p id="integrityModalDetails" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;"></p>
+      <button class="btn-primary" onclick="closeIntegrityModal()">Done</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

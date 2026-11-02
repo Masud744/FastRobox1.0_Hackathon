@@ -1,0 +1,11 @@
+# Dependency directories
+node_modules/
+
+# Database files (generated at runtime)
+*.db
+*.db-wal
+*.db-shm
+
+# Environment & local files
+.env
+.DS_Store
