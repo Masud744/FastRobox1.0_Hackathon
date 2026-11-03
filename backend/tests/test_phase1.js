@@ -42,9 +42,11 @@ async function runTests() {
     const batchCount = db.prepare('SELECT COUNT(*) as count FROM vaccine_batches').get().count;
     const auditCount = db.prepare('SELECT COUNT(*) as count FROM audit_log_chain').get().count;
 
-    assert.strictEqual(userCount, 3, 'Should have 3 default users (Admin, Pharmacist, Inspector)');
+    assert.ok(userCount >= 3, 'Should have at least 3 users');
+    const defaultUsers = db.prepare("SELECT username FROM users WHERE username IN ('admin', 'pharmacist', 'inspector')").all();
+    assert.strictEqual(defaultUsers.length, 3, 'Default users admin, pharmacist, and inspector must exist');
     assert.strictEqual(fridgeCount, 2, 'Should have 2 fridges (Fridge 1 & Fridge 2)');
-    assert.strictEqual(batchCount, 5, 'Should have 5 initial vaccine batches');
+    assert.ok(batchCount >= 5, 'Should have at least 5 vaccine batches');
     assert.ok(auditCount >= 1, 'Should have at least 1 audit block (Genesis block)');
   });
 

@@ -4,7 +4,7 @@ const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
 const db = require('./database');
 const config = require('./config');
-const { loginUser, authenticateToken, requireRoles } = require('./auth');
+const { loginUser, registerUser, authenticateToken, requireRoles } = require('./auth');
 const {
   verifyDeviceTelemetry,
   appendAuditLog,
@@ -87,6 +87,25 @@ app.post('/api/auth/login', (req, res) => {
 
   appendAuditLog('USER_LOGIN', { username: result.user.username, role: result.user.role }, result.user.username);
   res.json(result);
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const { username, password, role } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
+  }
+
+  const result = registerUser(username, password, role || 'Pharmacist');
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  appendAuditLog('USER_REGISTERED', { username: result.user.username, role: result.user.role }, result.user.username);
+  res.status(201).json(result);
+});
+
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  res.json({ user: req.user });
 });
 
 // =========================================================================
@@ -219,6 +238,56 @@ app.post('/api/telemetry/offline-sync', (req, res) => {
 app.get('/api/batches', (req, res) => {
   const batches = db.prepare('SELECT * FROM vaccine_batches ORDER BY id ASC').all();
   res.json(batches);
+});
+
+app.post('/api/batches', authenticateToken, requireRoles('Pharmacist', 'Admin'), (req, res) => {
+  const { id, name, type, fridge_id, expiry_date, total_budget_mins } = req.body;
+  if (!id || !name || !type || !fridge_id || !expiry_date) {
+    return res.status(400).json({ error: 'Missing required batch fields (id, name, type, fridge_id, expiry_date)' });
+  }
+
+  const existing = db.prepare('SELECT id FROM vaccine_batches WHERE id = ?').get(id);
+  if (existing) {
+    return res.status(400).json({ error: `Batch ID '${id}' already exists.` });
+  }
+
+  const qr_code = id;
+  const budget = parseFloat(total_budget_mins) || 60.0;
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO vaccine_batches (id, name, type, fridge_id, expiry_date, total_budget_mins, consumed_budget_mins, status, qr_code)
+      VALUES (?, ?, ?, ?, ?, ?, 0.0, 'Safe', ?)
+    `);
+    stmt.run(id, name, type, fridge_id, expiry_date, budget, qr_code);
+
+    // Asynchronously mirror new batch to Supabase
+    try {
+      const { supabase } = require('./supabaseClient');
+      if (supabase) {
+        supabase.from('vaccine_batches').insert({
+          id, name, type, fridge_id, expiry_date, total_budget_mins: budget, consumed_budget_mins: 0.0, status: 'Safe', qr_code
+        }).then(({ error }) => {
+          if (error) console.error('[Supabase Mirror] Batch insert error:', error.message);
+        });
+      }
+    } catch (e) {}
+
+    appendAuditLog('BATCH_REGISTERED', { batchId: id, name, type, fridgeId: fridge_id }, req.user.username);
+
+    broadcast({
+      type: 'BATCH_REGISTERED',
+      batch: { id, name, type, fridge_id, expiry_date, total_budget_mins: budget, consumed_budget_mins: 0.0, status: 'Safe', qr_code }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Batch ${id} (${name}) registered successfully.`,
+      batch: { id, name, type, fridge_id, expiry_date, total_budget_mins: budget, consumed_budget_mins: 0.0, status: 'Safe', qr_code }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // PUBLIC QR CHECK ROUTE: Zero login required (Task 4 requirement)

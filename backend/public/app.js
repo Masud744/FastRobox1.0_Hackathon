@@ -1,5 +1,6 @@
 /**
  * ColdChain Frontend Dashboard Application Logic
+ * Comprehensive SaaS UI/UX & Real-time Telemetry Management
  */
 
 // Application State
@@ -15,14 +16,17 @@ const state = {
 };
 
 // =========================================================================
-// 1. INITIALIZATION & WEBSOCKET
+// 1. INITIALIZATION & SESSION RESTORATION
 // =========================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  lucide.createIcons();
+document.addEventListener('DOMContentLoaded', async () => {
   setupNavigation();
   initTelemetryChart();
-  autoLoginDefault('admin', 'Admin@123');
+  initGlobalEventListeners();
+  
+  // Restore or initialize authentication
+  await initAuthSession();
+  
   connectWebSocket();
   refreshAllData();
 
@@ -30,24 +34,446 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(refreshAllData, 5000);
 });
 
+/**
+ * Setup Tab Navigation
+ */
 function setupNavigation() {
   const tabs = document.querySelectorAll('.nav-tab[data-tab]');
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-
       const target = tab.getAttribute('data-tab');
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      document.getElementById(`tab-${target}`).classList.add('active');
-      state.activeTab = target;
-
-      if (target === 'inventory') loadInventoryData();
-      if (target === 'ai-relocation') checkAIRelocation();
-      if (target === 'audit') loadAuditLedger();
+      navigateToTab(target);
     });
   });
 }
+
+function navigateToTab(target) {
+  const tabs = document.querySelectorAll('.nav-tab[data-tab]');
+  tabs.forEach(t => {
+    if (t.getAttribute('data-tab') === target) {
+      t.classList.add('active');
+    } else {
+      t.classList.remove('active');
+    }
+  });
+
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  const targetPane = document.getElementById(`tab-${target}`);
+  if (targetPane) targetPane.classList.add('active');
+  state.activeTab = target;
+
+  if (target === 'inventory') loadInventoryData();
+  if (target === 'ai-relocation') checkAIRelocation();
+  if (target === 'audit') loadAuditLedger();
+}
+
+/**
+ * Global click listener for closing dropdowns on outside click
+ */
+function initGlobalEventListeners() {
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('userDropdown');
+    const profileBtn = document.getElementById('userProfileBtn');
+    if (dropdown && profileBtn) {
+      if (!dropdown.contains(e.target) && !profileBtn.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    }
+  });
+
+  // ESC key closes any open modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
+      closeUserDropdown();
+    }
+  });
+}
+
+// =========================================================================
+// 2. DEFENSIVE TOAST NOTIFICATION SYSTEM (/ui-ux-design)
+// =========================================================================
+
+function showToast(title, message, type = 'info', duration = 3800) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+
+  let iconName = 'info';
+  if (type === 'success') iconName = 'check-circle-2';
+  if (type === 'error') iconName = 'alert-octagon';
+  if (type === 'warning') iconName = 'alert-triangle';
+
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <i data-lucide="${iconName}"></i>
+    </div>
+    <div class="toast-body">
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="this.closest('.toast').remove()" aria-label="Close">
+      <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+    </button>
+  `;
+
+  container.appendChild(toast);
+  lucide.createIcons();
+
+  setTimeout(() => {
+    toast.classList.add('removing');
+    setTimeout(() => toast.remove(), 260);
+  }, duration);
+}
+
+// =========================================================================
+// 3. AUTHENTICATION & RBAC (SIGN IN, SIGN UP, SESSION)
+// =========================================================================
+
+/**
+ * Check and restore stored session from localStorage
+ */
+async function initAuthSession() {
+  const savedToken = localStorage.getItem('coldchain_token');
+  const savedUser = localStorage.getItem('coldchain_user');
+
+  if (savedToken && savedUser) {
+    try {
+      state.token = savedToken;
+      state.currentUser = JSON.parse(savedUser);
+
+      // Verify token with backend
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${savedToken}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        state.currentUser = data.user;
+        updateUserUI();
+        return;
+      }
+    } catch (e) {
+      console.warn('Session verification failed, falling back to default admin');
+    }
+  }
+
+  // Default initial sign in as Admin for demo hackathon environment
+  await autoLoginDefault('admin', 'Admin@123');
+}
+
+/**
+ * Perform login request
+ */
+async function loginUser(username, password) {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+  if (res.ok && data.success) {
+    state.currentUser = data.user;
+    state.token = data.token;
+    localStorage.setItem('coldchain_token', data.token);
+    localStorage.setItem('coldchain_user', JSON.stringify(data.user));
+    updateUserUI();
+    return { success: true, user: data.user };
+  } else {
+    return { success: false, error: data.message || data.error || 'Authentication failed' };
+  }
+}
+
+/**
+ * Perform registration request
+ */
+async function registerUser(username, password, role) {
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, role })
+  });
+
+  const data = await res.json();
+  if (res.ok && data.success) {
+    state.currentUser = data.user;
+    state.token = data.token;
+    localStorage.setItem('coldchain_token', data.token);
+    localStorage.setItem('coldchain_user', JSON.stringify(data.user));
+    updateUserUI();
+    return { success: true, user: data.user };
+  } else {
+    return { success: false, error: data.message || data.error || 'Registration failed' };
+  }
+}
+
+async function autoLoginDefault(username, password) {
+  try {
+    const result = await loginUser(username, password);
+    if (!result.success) {
+      console.warn('Auto-login default fallback notice:', result.error);
+    }
+  } catch (err) {
+    console.error('Auto login error:', err);
+  }
+}
+
+function updateUserUI() {
+  const username = state.currentUser.username || 'User';
+  const role = state.currentUser.role || 'Pharmacist';
+
+  // Header badges
+  const userEl = document.getElementById('currentUsername');
+  const roleTag = document.getElementById('currentRoleTag');
+  const avatar = document.getElementById('userAvatar');
+
+  if (userEl) userEl.textContent = username;
+  if (roleTag) {
+    roleTag.textContent = role;
+    roleTag.className = `role-tag role-${role.toLowerCase()}`;
+  }
+  if (avatar) {
+    avatar.textContent = username.charAt(0).toUpperCase();
+    if (role === 'Admin') avatar.style.borderColor = 'var(--role-admin)';
+    else if (role === 'Pharmacist') avatar.style.borderColor = 'var(--role-pharmacist)';
+    else avatar.style.borderColor = 'var(--role-inspector)';
+  }
+
+  // Dropdown text
+  const dropUser = document.getElementById('dropUsername');
+  const dropRole = document.getElementById('dropUserRole');
+  if (dropUser) dropUser.textContent = username;
+  if (dropRole) dropRole.textContent = `Active Role: ${role}`;
+
+  // Update quick switch buttons active state
+  ['admin', 'pharmacist', 'inspector'].forEach(r => {
+    const btn = document.getElementById(`btnSwitch${r.charAt(0).toUpperCase() + r.slice(1, 6)}`);
+    if (btn) {
+      if (role.toLowerCase() === r) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+  });
+
+  lucide.createIcons();
+}
+
+/**
+ * Handle Sign In form submit
+ */
+async function handleLoginSubmit() {
+  const usernameInput = document.getElementById('loginUsername');
+  const passwordInput = document.getElementById('loginPassword');
+  const submitBtn = document.getElementById('btnSignInSubmit');
+
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!username || !password) {
+    showToast('Missing Credentials', 'Please enter both username and password.', 'warning');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:8px; height:8px;"></span> Signing In...';
+
+  try {
+    const result = await loginUser(username, password);
+    if (result.success) {
+      closeAuthModal();
+      showToast('Authentication Successful', `Welcome back, ${result.user.username} (${result.user.role}).`, 'success');
+      refreshAllData();
+    } else {
+      showToast('Sign In Failed', result.error, 'error');
+    }
+  } catch (err) {
+    showToast('Network Error', 'Unable to reach the authentication service.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i data-lucide="log-in" style="width: 18px; height: 18px;"></i> Sign In';
+    lucide.createIcons();
+  }
+}
+
+/**
+ * Handle Sign Up form submit
+ */
+async function handleRegisterSubmit() {
+  const usernameInput = document.getElementById('regUsername');
+  const passwordInput = document.getElementById('regPassword');
+  const confirmInput = document.getElementById('regConfirmPassword');
+  const roleInput = document.getElementById('regRole');
+  const submitBtn = document.getElementById('btnSignUpSubmit');
+
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+  const confirmPassword = confirmInput.value;
+  const role = roleInput.value;
+
+  if (!username || !password) {
+    showToast('Validation Error', 'Username and password are required.', 'warning');
+    return;
+  }
+
+  if (password.length < 6) {
+    showToast('Weak Password', 'Password must be at least 6 characters.', 'warning');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showToast('Password Mismatch', 'The two passwords do not match. Please re-enter.', 'warning');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:8px; height:8px;"></span> Creating Account...';
+
+  try {
+    const result = await registerUser(username, password, role);
+    if (result.success) {
+      closeAuthModal();
+      showToast('Account Created!', `Welcome to ColdChain, ${result.user.username}. You are signed in as ${result.user.role}.`, 'success');
+      refreshAllData();
+    } else {
+      showToast('Registration Error', result.error, 'error');
+    }
+  } catch (err) {
+    showToast('Network Error', 'Registration request failed.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i data-lucide="user-plus" style="width: 18px; height: 18px;"></i> Create Account & Sign In';
+    lucide.createIcons();
+  }
+}
+
+function handleLogout() {
+  localStorage.removeItem('coldchain_token');
+  localStorage.removeItem('coldchain_user');
+  state.currentUser = { username: 'Guest', role: 'Inspector' };
+  state.token = '';
+  updateUserUI();
+  showToast('Signed Out', 'You have been safely signed out. Operating in guest inspection mode.', 'info');
+}
+
+/**
+ * Quick Role Switcher for hackathon testing
+ */
+async function handleQuickRoleSwitch(role) {
+  let u = 'admin';
+  let p = 'Admin@123';
+
+  if (role === 'pharmacist') {
+    u = 'pharmacist';
+    p = 'Pharma@123';
+  } else if (role === 'inspector') {
+    u = 'inspector';
+    p = 'Inspect@123';
+  }
+
+  const result = await loginUser(u, p);
+  if (result.success) {
+    closeUserDropdown();
+    showToast('Role Switched', `Active session switched to ${result.user.username} (${result.user.role}).`, 'success');
+    refreshAllData();
+  } else {
+    showToast('Role Switch Failed', result.error, 'error');
+  }
+}
+
+function toggleUserDropdown(e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) dropdown.classList.toggle('open');
+}
+
+function closeUserDropdown() {
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+}
+
+function openAuthModal(initialTab = 'signin') {
+  switchAuthTab(initialTab);
+  document.getElementById('authModal').classList.add('open');
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal').classList.remove('open');
+}
+
+function switchAuthTab(tab) {
+  const btnSignIn = document.getElementById('tabBtnSignIn');
+  const btnSignUp = document.getElementById('tabBtnSignUp');
+  const paneSignIn = document.getElementById('authPaneSignIn');
+  const paneSignUp = document.getElementById('authPaneSignUp');
+  const modalTitle = document.getElementById('authModalTitle');
+
+  if (tab === 'signin') {
+    btnSignIn.classList.add('active');
+    btnSignUp.classList.remove('active');
+    paneSignIn.style.display = 'block';
+    paneSignUp.style.display = 'none';
+    modalTitle.textContent = 'Sign In to ColdChain';
+  } else {
+    btnSignUp.classList.add('active');
+    btnSignIn.classList.remove('active');
+    paneSignUp.style.display = 'block';
+    paneSignIn.style.display = 'none';
+    modalTitle.textContent = 'Create New ColdChain Account';
+  }
+  lucide.createIcons();
+}
+
+function quickFillLogin(role) {
+  const uInput = document.getElementById('loginUsername');
+  const pInput = document.getElementById('loginPassword');
+
+  if (role === 'admin') {
+    uInput.value = 'admin';
+    pInput.value = 'Admin@123';
+  } else if (role === 'pharmacist') {
+    uInput.value = 'pharmacist';
+    pInput.value = 'Pharma@123';
+  } else {
+    uInput.value = 'inspector';
+    pInput.value = 'Inspect@123';
+  }
+}
+
+function selectRegisterRole(role) {
+  document.getElementById('regRole').value = role;
+  const cards = {
+    'Pharmacist': document.getElementById('cardRolePharm'),
+    'Inspector': document.getElementById('cardRoleInspect'),
+    'Admin': document.getElementById('cardRoleAdmin')
+  };
+
+  Object.keys(cards).forEach(r => {
+    if (cards[r]) {
+      if (r === role) cards[r].classList.add('selected');
+      else cards[r].classList.remove('selected');
+    }
+  });
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.innerHTML = '<i data-lucide="eye-off"></i>';
+  } else {
+    input.type = 'password';
+    btn.innerHTML = '<i data-lucide="eye"></i>';
+  }
+  lucide.createIcons();
+}
+
+// =========================================================================
+// 4. WEBSOCKET & REAL-TIME INGESTION
+// =========================================================================
 
 function connectWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -55,8 +481,11 @@ function connectWebSocket() {
   const ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
-    document.getElementById('wsStatus').textContent = 'LIVE (WS)';
-    document.getElementById('wsStatus').parentElement.style.color = 'var(--safe-green)';
+    const el = document.getElementById('wsStatus');
+    if (el) {
+      el.textContent = 'LIVE (WS & HiveMQ)';
+      el.parentElement.style.color = 'var(--safe-green)';
+    }
   };
 
   ws.onmessage = (event) => {
@@ -68,7 +497,7 @@ function connectWebSocket() {
         updateFridgeUI();
       } else if (data.type === 'TELEMETRY_UPDATE') {
         refreshAllData();
-      } else if (data.type === 'BATCH_RELOCATION_COMPLETED' || data.type === 'DISCARD_ALARM_RESET') {
+      } else if (data.type === 'BATCH_RELOCATION_COMPLETED' || data.type === 'DISCARD_ALARM_RESET' || data.type === 'BATCH_REGISTERED') {
         refreshAllData();
       }
     } catch (err) {
@@ -77,14 +506,17 @@ function connectWebSocket() {
   };
 
   ws.onclose = () => {
-    document.getElementById('wsStatus').textContent = 'RECONNECTING';
-    document.getElementById('wsStatus').parentElement.style.color = 'var(--warning-amber)';
+    const el = document.getElementById('wsStatus');
+    if (el) {
+      el.textContent = 'RECONNECTING';
+      el.parentElement.style.color = 'var(--warning-amber)';
+    }
     setTimeout(connectWebSocket, 3000);
   };
 }
 
 // =========================================================================
-// 2. DATA FETCHING & UI UPDATES
+// 5. DATA REFRESH & DIGITAL TWIN UI
 // =========================================================================
 
 async function refreshAllData() {
@@ -104,6 +536,11 @@ async function refreshAllData() {
 
     // 4. Update Alarm Banner
     checkGlobalAlarmState();
+
+    // 5. Reload Inventory if active
+    if (state.activeTab === 'inventory') {
+      loadInventoryData();
+    }
   } catch (err) {
     console.error('Data refresh error:', err);
   }
@@ -141,15 +578,15 @@ function updateFridgeUI() {
     if (statusEl) {
       if (f.current_temp >= 2.0 && f.current_temp <= 8.0) {
         statusEl.className = 'status-badge status-safe';
-        statusEl.innerHTML = '<i data-lucide="check-circle-2"></i> SAFE (2–8°C)';
+        statusEl.innerHTML = '<i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i> SAFE (2–8°C)';
         if (cardEl) cardEl.classList.remove('breach');
       } else if (f.current_temp > 8.0 && f.current_temp <= 12.0) {
         statusEl.className = 'status-badge status-warning';
-        statusEl.innerHTML = '<i data-lucide="alert-triangle"></i> WARNING (>8°C)';
+        statusEl.innerHTML = '<i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> WARNING (>8°C)';
         if (cardEl) cardEl.classList.remove('breach');
       } else {
         statusEl.className = 'status-badge status-breach';
-        statusEl.innerHTML = '<i data-lucide="alert-octagon"></i> BREACH DANGER';
+        statusEl.innerHTML = '<i data-lucide="alert-octagon" style="width: 14px; height: 14px;"></i> BREACH DANGER';
         if (cardEl) cardEl.classList.add('breach');
       }
     }
@@ -233,11 +670,14 @@ function checkGlobalAlarmState() {
 }
 
 // =========================================================================
-// 3. CHART.JS TELEMETRY & 30-MIN FORECAST
+// 6. CHART.JS TELEMETRY & 30-MIN AI PREDICTION
 // =========================================================================
 
 function initTelemetryChart() {
-  const ctx = document.getElementById('telemetryChart').getContext('2d');
+  const canvas = document.getElementById('telemetryChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
   state.chart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -250,7 +690,7 @@ function initTelemetryChart() {
           backgroundColor: 'rgba(6, 182, 212, 0.1)',
           fill: true,
           tension: 0.3,
-          borderWidth: 2,
+          borderWidth: 2.2,
           pointRadius: 2
         },
         {
@@ -266,8 +706,8 @@ function initTelemetryChart() {
         {
           label: '8°C Safe Ceiling',
           data: [],
-          borderColor: 'rgba(239, 68, 68, 0.6)',
-          borderDash: [2, 2],
+          borderColor: 'rgba(239, 68, 68, 0.65)',
+          borderDash: [3, 3],
           borderWidth: 1.5,
           pointRadius: 0,
           fill: false
@@ -302,7 +742,7 @@ async function updateChartData(fridgeId) {
   try {
     const res = await fetch(`/api/telemetry/recent/${fridgeId}?limit=15`);
     const logs = await res.json();
-    if (!logs || logs.length === 0) return;
+    if (!logs || logs.length === 0 || !state.chart) return;
 
     const labels = logs.map(l => new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     const data = logs.map(l => l.temperature);
@@ -329,12 +769,14 @@ async function updateChartData(fridgeId) {
 
     // Update forecast badge
     const badge = document.getElementById('aiForecastBadge');
-    if (forecast.isBreachPredicted) {
-      badge.className = 'status-badge status-breach';
-      badge.innerHTML = `<i data-lucide="alert-triangle"></i> Breach in ~${forecast.minutesToBreach || '<30'}m (${forecast.predictedTemp30Min}°C)`;
-    } else {
-      badge.className = 'status-badge status-safe';
-      badge.innerHTML = `<i data-lucide="check-circle-2"></i> Safe: ${forecast.predictedTemp30Min}°C in 30m`;
+    if (badge) {
+      if (forecast.isBreachPredicted) {
+        badge.className = 'status-badge status-breach';
+        badge.innerHTML = `<i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Breach in ~${forecast.minutesToBreach || '<30'}m (${forecast.predictedTemp30Min}°C)`;
+      } else {
+        badge.className = 'status-badge status-safe';
+        badge.innerHTML = `<i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i> Safe: ${forecast.predictedTemp30Min}°C in 30m`;
+      }
     }
     lucide.createIcons();
   } catch (err) {
@@ -371,7 +813,7 @@ async function fetchCompressorHealth(fridgeId) {
 }
 
 // =========================================================================
-// 4. VACCINE INVENTORY TABLE & PUBLIC QR CHECK
+// 7. VACCINE INVENTORY & BATCH CREATION
 // =========================================================================
 
 async function loadInventoryData() {
@@ -381,6 +823,7 @@ async function loadInventoryData() {
     state.batches = batches;
 
     const tbody = document.getElementById('batchTableBody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     batches.forEach(b => {
@@ -404,14 +847,14 @@ async function loadInventoryData() {
       tr.innerHTML = `
         <td>
           <div style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan);">${b.id}</div>
-          <div style="font-size: 0.75rem; color: var(--text-dim);">${b.qr_code}</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim);">${b.qr_code}</div>
         </td>
         <td>
-          <div style="font-weight: 600;">${b.name}</div>
+          <div style="font-weight: 600; color: #ffffff;">${b.name}</div>
           <div style="font-size: 0.8rem; color: var(--text-muted);">${b.type}</div>
         </td>
         <td>
-          <span style="font-family: var(--font-mono); font-size: 0.85rem;">${fridgeName}</span>
+          <span style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);">${fridgeName}</span>
         </td>
         <td>
           <div class="budget-progress-container">
@@ -425,10 +868,10 @@ async function loadInventoryData() {
           </div>
         </td>
         <td>${statusBadge}</td>
-        <td style="font-family: var(--font-mono); font-size: 0.85rem;">${b.expiry_date}</td>
+        <td style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);">${b.expiry_date}</td>
         <td>
           <button class="action-btn" onclick="openQrModal('${b.id}', '${b.name}', '${b.qr_code}')">
-            <i data-lucide="qr-code"></i> QR Code
+            <i data-lucide="qr-code" style="width: 14px; height: 14px;"></i> View QR
           </button>
         </td>
       `;
@@ -441,6 +884,63 @@ async function loadInventoryData() {
   }
 }
 
+function openAddBatchModal() {
+  if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Pharmacist') {
+    showToast('Permission Denied', 'Only Pharmacists and Admins can register new vaccine batches. Please switch role.', 'warning');
+    return;
+  }
+  document.getElementById('addBatchModal').classList.add('open');
+}
+
+function closeAddBatchModal() {
+  document.getElementById('addBatchModal').classList.remove('open');
+}
+
+async function handleAddBatchSubmit() {
+  const id = document.getElementById('newBatchId').value.trim();
+  const name = document.getElementById('newBatchName').value.trim();
+  const type = document.getElementById('newBatchType').value;
+  const fridge_id = document.getElementById('newBatchFridge').value;
+  const expiry_date = document.getElementById('newBatchExpiry').value;
+  const total_budget_mins = parseFloat(document.getElementById('newBatchBudget').value) || 60;
+  const submitBtn = document.getElementById('btnAddBatchSubmit');
+
+  if (!id || !name || !expiry_date) {
+    showToast('Incomplete Batch Data', 'Please fill all required fields.', 'warning');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:8px; height:8px;"></span> Registering Batch...';
+
+  try {
+    const res = await fetch('/api/batches', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.token}`
+      },
+      body: JSON.stringify({ id, name, type, fridge_id, expiry_date, total_budget_mins })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      closeAddBatchModal();
+      showToast('Batch Registered!', `Batch ${id} (${name}) registered and mirrored to Supabase.`, 'success');
+      document.getElementById('addBatchForm').reset();
+      loadInventoryData();
+    } else {
+      showToast('Registration Error', data.error || 'Failed to create batch.', 'error');
+    }
+  } catch (err) {
+    showToast('Network Error', 'Failed to submit batch to server.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> Register Vaccine Batch';
+    lucide.createIcons();
+  }
+}
+
 function openQrModal(batchId, batchName, qrCode) {
   document.getElementById('qrModalTitle').textContent = batchName;
   document.getElementById('qrModalDesc').textContent = `Serial ID: ${batchId} | QR: ${qrCode}`;
@@ -448,7 +948,6 @@ function openQrModal(batchId, batchName, qrCode) {
   const publicUrl = `${window.location.origin}/verify/${batchId}`;
   document.getElementById('qrPublicLink').href = publicUrl;
 
-  // Render QR Code using QRious
   new QRious({
     element: document.getElementById('qrCanvas'),
     value: publicUrl,
@@ -458,6 +957,7 @@ function openQrModal(batchId, batchName, qrCode) {
   });
 
   document.getElementById('qrModal').classList.add('open');
+  lucide.createIcons();
 }
 
 function closeQrModal() {
@@ -465,7 +965,77 @@ function closeQrModal() {
 }
 
 // =========================================================================
-// 5. AI RELOCATION ADVISOR & 1-CLICK ACTION
+// 8. GROQ AI CLINICAL ADVISOR MODAL & INTEGRATION
+// =========================================================================
+
+async function openGroqClinicalBrief(fridgeId = 'fridge_1') {
+  const modal = document.getElementById('groqAdvisorModal');
+  const content = document.getElementById('groqAdvisorContent');
+  modal.classList.add('open');
+
+  content.innerHTML = `
+    <div style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+      <div class="pulse-dot" style="margin: 0 auto 1.25rem; width: 14px; height: 14px;"></div>
+      <p style="font-size: 0.95rem; color: #ffffff; font-weight: 600;">Consulting Groq Qwen 3.8-27B Inference Engine...</p>
+      <p style="font-size: 0.8rem; margin-top: 0.35rem;">Analyzing temperature telemetry, compressor hysteresis, and heat exposure logs.</p>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`/api/ai/clinical-brief/${fridgeId}`);
+    const data = await res.json();
+    const brief = data.brief || {};
+    const plan = data.plan || {};
+
+    const source = brief.source || 'Groq Cloud (qwen/qwen3.8-27b)';
+    const text = brief.text || 'Telemetry assessment nominal. Cold chain integrity intact.';
+
+    content.innerHTML = `
+      <div class="groq-brief-card">
+        <div class="groq-brief-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="shield-alert" style="color: var(--accent-cyan); width: 18px; height: 18px;"></i>
+            <span style="font-weight: 700; color: #ffffff; font-size: 0.95rem;">Telemetry Context Assessment</span>
+          </div>
+          <span class="groq-model-pill">${source}</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; white-space: pre-line;">${text}</p>
+      </div>
+
+      <div class="groq-brief-card" style="margin-bottom: 0;">
+        <h4 style="font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.6rem;">Operational Evacuation Status</h4>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: 700; color: #ffffff;">${plan.isRelocationRecommended ? 'Relocation Recommended' : 'Optimal Storage Parameters'}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">${plan.reason || 'Storage maintained at target range.'}</div>
+          </div>
+          ${plan.isRelocationRecommended ? `
+            <button class="btn-primary-action" onclick="closeGroqAdvisorModal(); navigateToTab('ai-relocation');">
+              <i data-lucide="shuffle" style="width: 14px; height: 14px;"></i> View Evacuation Plan
+            </button>
+          ` : `
+            <span class="status-badge status-safe"><i data-lucide="check" style="width: 14px; height: 14px;"></i> Nominal</span>
+          `}
+        </div>
+      </div>
+    `;
+    lucide.createIcons();
+  } catch (err) {
+    content.innerHTML = `
+      <div style="padding: 1.5rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #f87171;">
+        <h4 style="margin-bottom: 0.5rem; font-weight: 700;">Clinical Advisory Service Error</h4>
+        <p style="font-size: 0.85rem;">Failed to fetch Groq clinical analysis. Please check network connectivity.</p>
+      </div>
+    `;
+  }
+}
+
+function closeGroqAdvisorModal() {
+  document.getElementById('groqAdvisorModal').classList.remove('open');
+}
+
+// =========================================================================
+// 9. AI RELOCATION ADVISOR & 1-CLICK ACTION
 // =========================================================================
 
 async function checkAIRelocation() {
@@ -503,7 +1073,7 @@ async function checkAIRelocation() {
         <div style="margin-bottom: 1rem; color: #ffffff;">
           <strong>Source:</strong> ${plan.sourceFridgeName} ➔ <strong>Destination:</strong> ${plan.targetFridgeName}
         </div>
-        <p style="margin-bottom: 0.75rem;"><strong>Batches prioritized for evacuation:</strong></p>
+        <p style="margin-bottom: 0.75rem; color: #ffffff;"><strong>Batches prioritized for evacuation:</strong></p>
         <ul style="padding-left: 1.25rem;">
           ${plan.batchesToRelocate.map(b => `
             <li style="margin-bottom: 0.35rem;">
@@ -531,6 +1101,11 @@ async function checkAIRelocation() {
 async function executeOneClickRelocation() {
   if (!state.currentPlanId) return;
 
+  if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Pharmacist') {
+    showToast('Permission Denied', 'Only Pharmacists or Admins can confirm batch relocations.', 'warning');
+    return;
+  }
+
   try {
     const res = await fetch('/api/ai/relocation-confirm', {
       method: 'POST',
@@ -543,19 +1118,19 @@ async function executeOneClickRelocation() {
 
     const data = await res.json();
     if (res.ok) {
-      alert(`✔ 1-Click Relocation Executed!\n${data.relocatedCount} batches successfully evacuated to ${data.to}. Logged to cryptographic audit chain.`);
+      showToast('Relocation Executed', `${data.relocatedCount} batches successfully relocated to ${data.to}. Logged to SHA-256 audit chain.`, 'success');
       refreshAllData();
       checkAIRelocation();
     } else {
-      alert(`✘ Relocation Failed: ${data.message || data.error}`);
+      showToast('Relocation Failed', data.message || data.error, 'error');
     }
   } catch (err) {
-    alert('Network error executing relocation.');
+    showToast('Network Error', 'Error executing relocation request.', 'error');
   }
 }
 
 // =========================================================================
-// 6. CRYPTOGRAPHIC HASH CHAIN AUDIT & TAMPER PROOFS
+// 10. CRYPTOGRAPHIC HASH CHAIN AUDIT & TAMPER PROOFS
 // =========================================================================
 
 async function loadAuditLedger() {
@@ -564,18 +1139,19 @@ async function loadAuditLedger() {
     const logs = await res.json();
 
     const tbody = document.getElementById('auditTableBody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     logs.forEach(log => {
       const timeStr = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-family: var(--font-mono); font-weight: 700;">#${log.id}</td>
+        <td style="font-family: var(--font-mono); font-weight: 700; color: #ffffff;">#${log.id}</td>
         <td style="color: var(--text-dim); font-size: 0.8rem;">${timeStr}</td>
         <td>
           <span class="role-tag role-pharmacist">${log.event_type}</span>
         </td>
-        <td style="font-size: 0.85rem;">${log.actor}</td>
+        <td style="font-size: 0.85rem; color: var(--text-secondary);">${log.actor}</td>
         <td class="hash-cell">${log.previous_hash.substring(0, 16)}...</td>
         <td class="hash-cell" style="color: var(--safe-green);">${log.current_hash.substring(0, 16)}...</td>
       `;
@@ -600,22 +1176,29 @@ async function handleVerifyChainIntegrity() {
       headerEl.textContent = 'Cryptographic Integrity 100% Valid';
       headerEl.style.color = 'var(--safe-green)';
       detailsEl.textContent = `All ${result.totalRecords} blocks successfully verified from Genesis to Head. Head hash: ${result.headHash.substring(0, 24)}... Zero tampering detected.`;
+      showToast('Ledger Validated', 'All SHA-256 hashes successfully recomputed without discrepancy.', 'success');
     } else {
       titleEl.textContent = 'CRITICAL: Ledger Tampering Detected!';
       iconEl.innerHTML = '<i data-lucide="shield-alert" style="width: 54px; height: 54px; color: var(--discard-red);"></i>';
       headerEl.textContent = `Corrupted Block Caught: Row #${result.compromisedRowId}`;
       headerEl.style.color = 'var(--discard-red)';
       detailsEl.textContent = `Reason: ${result.reason}. ${result.details}`;
+      showToast('Tamper Detected', `Fraud detected at Block #${result.compromisedRowId}!`, 'error');
     }
 
     lucide.createIcons();
     document.getElementById('integrityModal').classList.add('open');
   } catch (err) {
-    alert('Verification error.');
+    showToast('Verification Error', 'Failed to communicate with audit verification engine.', 'error');
   }
 }
 
 async function handleSimulateTamper() {
+  if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Inspector') {
+    showToast('Permission Denied', 'Must be logged in as Admin or Inspector to simulate tampering.', 'warning');
+    return;
+  }
+
   try {
     const res = await fetch('/api/audit/simulate-tamper', {
       method: 'POST',
@@ -626,10 +1209,10 @@ async function handleSimulateTamper() {
       body: JSON.stringify({ rowId: 2, fakeData: { tamperedNote: 'MALICIOUS_RECORD_ALTERATION' } })
     });
     const data = await res.json();
-    alert(`Judges Demonstration: Record #2 was intentionally modified in SQLite without recomputing hash chain.\n\nNow click "Verify Integrity" to watch the cryptographic detector catch the fraud!`);
+    showToast('Tamper Injected (Judges Test)', 'Record #2 was modified in SQLite without recomputing hash chain. Click "Verify Integrity" to test!', 'warning', 6000);
     loadAuditLedger();
   } catch (err) {
-    alert('Must be logged in as Admin or Inspector to simulate tamper.');
+    showToast('Tamper Failed', 'Unable to execute tamper simulation.', 'error');
   }
 }
 
@@ -638,13 +1221,13 @@ function closeIntegrityModal() {
 }
 
 // =========================================================================
-// 7. ADMIN RESET & RBAC AUTHENTICATION
+// 11. HARDWARE ALARM RESET & AI RESEARCH REPORT
 // =========================================================================
 
 async function handleAdminAlarmReset() {
   if (state.currentUser.role !== 'Admin') {
-    alert('Only Admin role can reset the latched discard alarm. Please switch to Admin role.');
-    openLoginModal();
+    showToast('Admin Required', 'Only Admin role can reset the latched discard alarm.', 'warning');
+    openAuthModal('signin');
     return;
   }
 
@@ -657,87 +1240,17 @@ async function handleAdminAlarmReset() {
       },
       body: JSON.stringify({ fridgeId: 'fridge_1', note: 'Admin verified and reset latched alarm' })
     });
+
     if (res.ok) {
-      alert('✔ Latched Red LED alarm successfully reset by Admin.');
+      showToast('Alarm Reset', 'Latched Red LED alarm successfully reset by Admin.', 'success');
       refreshAllData();
     } else {
       const data = await res.json();
-      alert(`Error: ${data.message}`);
+      showToast('Reset Failed', data.message || 'Error executing alarm reset.', 'error');
     }
   } catch (err) {
-    alert('Reset request failed.');
+    showToast('Network Error', 'Reset request failed.', 'error');
   }
-}
-
-function openLoginModal() {
-  document.getElementById('loginModal').classList.add('open');
-}
-
-function closeLoginModal() {
-  document.getElementById('loginModal').classList.remove('open');
-}
-
-function autoFillLogin() {
-  const role = document.getElementById('loginRoleSelect').value;
-  if (role === 'admin') {
-    document.getElementById('loginUsername').value = 'admin';
-    document.getElementById('loginPassword').value = 'Admin@123';
-  } else if (role === 'pharmacist') {
-    document.getElementById('loginUsername').value = 'pharmacist';
-    document.getElementById('loginPassword').value = 'Pharma@123';
-  } else {
-    document.getElementById('loginUsername').value = 'inspector';
-    document.getElementById('loginPassword').value = 'Inspect@123';
-  }
-}
-
-async function handleLoginSubmit() {
-  const u = document.getElementById('loginUsername').value;
-  const p = document.getElementById('loginPassword').value;
-
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: u, password: p })
-    });
-    const data = await res.json();
-
-    if (res.ok) {
-      state.currentUser = data.user;
-      state.token = data.token;
-      updateUserRoleBadge();
-      closeLoginModal();
-      alert(`Logged in successfully as ${data.user.username} (${data.user.role})`);
-    } else {
-      alert(`Login failed: ${data.message || data.error}`);
-    }
-  } catch (err) {
-    alert('Login network error.');
-  }
-}
-
-async function autoLoginDefault(username, password) {
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      state.currentUser = data.user;
-      state.token = data.token;
-      updateUserRoleBadge();
-    }
-  } catch (err) {}
-}
-
-function updateUserRoleBadge() {
-  document.getElementById('currentUsername').textContent = state.currentUser.username;
-  const roleTag = document.getElementById('currentRoleTag');
-  roleTag.textContent = state.currentUser.role;
-  roleTag.className = `role-tag role-${state.currentUser.role.toLowerCase()}`;
 }
 
 async function openAIReportModal() {
@@ -747,24 +1260,26 @@ async function openAIReportModal() {
 
     const c = document.getElementById('aiReportContent');
     c.innerHTML = `
-      <h4 style="color: #ffffff; margin-bottom: 0.5rem; font-size: 1.1rem;">${r.title}</h4>
-      <p style="margin-bottom: 1rem;">${r.executiveSummary}</p>
+      <h4 style="color: #ffffff; margin-bottom: 0.5rem; font-size: 1.15rem; font-family: var(--font-heading);">${r.title}</h4>
+      <p style="margin-bottom: 1rem; color: var(--text-secondary);">${r.executiveSummary}</p>
       
-      <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-        <h5 style="color: var(--accent-cyan); margin-bottom: 0.35rem;">1. ${r.models[0].name}</h5>
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <h5 style="color: var(--accent-cyan); margin-bottom: 0.35rem; font-size: 1rem;">1. ${r.models[0].name}</h5>
         <p><strong>MAE:</strong> ${r.models[0].performanceMetrics.meanAbsoluteError} | <strong>Lead Time:</strong> ${r.models[0].performanceMetrics.earlyBreachDetectionLeadTime}</p>
         <p><strong>Precision:</strong> ${r.models[0].performanceMetrics.precisionAt8CBreach} | <strong>Recall:</strong> ${r.models[0].performanceMetrics.recallAt8CBreach}</p>
       </div>
 
-      <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
-        <h5 style="color: #3b82f6; margin-bottom: 0.35rem;">2. ${r.models[1].name}</h5>
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1rem; border-radius: 8px;">
+        <h5 style="color: #3b82f6; margin-bottom: 0.35rem; font-size: 1rem;">2. ${r.models[1].name}</h5>
         <p><strong>Features:</strong> ${r.models[1].features.map(f => f.name).join(', ')}</p>
         <p><strong>Scoring:</strong> 80-100 (Optimal), 50-79 (Degrading), 0-49 (Critical Risk)</p>
       </div>
     `;
 
     document.getElementById('aiReportModal').classList.add('open');
-  } catch (err) {}
+  } catch (err) {
+    showToast('Report Error', 'Failed to load AI model report.', 'error');
+  }
 }
 
 function closeAIReportModal() {

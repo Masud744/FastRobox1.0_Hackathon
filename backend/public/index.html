@@ -15,10 +15,15 @@
 <body>
 
   <!-- =========================================================================
-       HEADER
+       TOAST NOTIFICATION CONTAINER (Defensive UI)
+       ========================================================================= -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- =========================================================================
+       HEADER & NAVIGATION BAR
        ========================================================================= -->
   <header>
-    <div class="brand">
+    <div class="brand" onclick="navigateToTab('dashboard')">
       <div class="brand-icon">
         <i data-lucide="shield-check"></i>
       </div>
@@ -31,33 +36,70 @@
     <!-- Navigation Tabs -->
     <nav class="nav-center">
       <button class="nav-tab active" data-tab="dashboard">
-        <i data-lucide="layout-dashboard"></i> Live Monitor
+        <i data-lucide="layout-dashboard" style="width: 16px; height: 16px;"></i> Live Monitor
       </button>
       <button class="nav-tab" data-tab="inventory">
-        <i data-lucide="package-check"></i> Vaccine Batches
+        <i data-lucide="package-check" style="width: 16px; height: 16px;"></i> Vaccine Batches
       </button>
       <button class="nav-tab" data-tab="ai-relocation">
-        <i data-lucide="sparkles"></i> AI Relocation
+        <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> AI Relocation
       </button>
       <button class="nav-tab" data-tab="audit">
-        <i data-lucide="link"></i> Hash Chain Audit
+        <i data-lucide="link" style="width: 16px; height: 16px;"></i> Hash Chain Audit
       </button>
       <a href="/verify/BATCH-CV19-001" target="_blank" class="nav-tab" style="text-decoration: none;">
-        <i data-lucide="qr-code"></i> Public QR Portal
+        <i data-lucide="qr-code" style="width: 16px; height: 16px;"></i> Public QR Portal
       </a>
     </nav>
 
-    <!-- Right Controls: Live status & RBAC Role -->
+    <!-- Right Controls: Live status, Groq AI Quick Button, User RBAC Profile -->
     <div class="nav-right">
       <div class="live-badge">
         <div class="pulse-dot"></div>
         <span id="wsStatus">LIVE 5s</span>
       </div>
 
-      <div class="user-role-badge" id="roleBadgeBtn" onclick="openLoginModal()">
-        <i data-lucide="user"></i>
-        <span id="currentUsername">Admin</span>
-        <span class="role-tag role-admin" id="currentRoleTag">Admin</span>
+      <button class="nav-ai-btn" onclick="openGroqClinicalBrief('fridge_1')" title="Run Groq Qwen 3.8-27B Clinical Assessment">
+        <i data-lucide="bot" style="width: 16px; height: 16px;"></i> Groq AI Advisor
+      </button>
+
+      <!-- User Profile Trigger Pill -->
+      <div class="user-profile-btn" id="userProfileBtn" onclick="toggleUserDropdown(event)">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-meta">
+          <span class="user-meta-name" id="currentUsername">Admin</span>
+          <span class="role-tag role-admin" id="currentRoleTag">Admin</span>
+        </div>
+        <i data-lucide="chevron-down" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+      </div>
+
+      <!-- User Profile Dropdown Menu -->
+      <div class="user-dropdown" id="userDropdown">
+        <div class="dropdown-header">
+          <div class="dropdown-user-title" id="dropUsername">Admin</div>
+          <div class="dropdown-user-sub" id="dropUserRole">Role: Admin (Full Controls)</div>
+        </div>
+
+        <div>
+          <div class="dropdown-section-label">Quick Switch Demo User</div>
+          <div class="role-switcher-grid">
+            <button class="role-switch-btn active" id="btnSwitchAdmin" onclick="handleQuickRoleSwitch('admin')">Admin</button>
+            <button class="role-switch-btn" id="btnSwitchPharm" onclick="handleQuickRoleSwitch('pharmacist')">Pharmacist</button>
+            <button class="role-switch-btn" id="btnSwitchInspect" onclick="handleQuickRoleSwitch('inspector')">Inspector</button>
+          </div>
+        </div>
+
+        <div class="dropdown-actions">
+          <button class="dropdown-btn" onclick="openAuthModal('signin'); closeUserDropdown();">
+            <i data-lucide="log-in" style="width: 16px; height: 16px;"></i> Sign In with Another Account
+          </button>
+          <button class="dropdown-btn" onclick="openAuthModal('signup'); closeUserDropdown();">
+            <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i> Create New Account (Sign Up)
+          </button>
+          <button class="dropdown-btn danger" onclick="handleLogout(); closeUserDropdown();">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Sign Out
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -93,7 +135,7 @@
               <p>ESP32 Primary Storage Unit</p>
             </div>
             <div class="status-badge status-safe" id="status-fridge_1">
-              <i data-lucide="check-circle-2"></i> SAFE (2–8°C)
+              <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i> SAFE (2–8°C)
             </div>
           </div>
 
@@ -168,7 +210,7 @@
               <p>ESP32 Auxiliary Secondary Unit</p>
             </div>
             <div class="status-badge status-safe" id="status-fridge_2">
-              <i data-lucide="check-circle-2"></i> SAFE (2–8°C)
+              <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i> SAFE (2–8°C)
             </div>
           </div>
 
@@ -260,9 +302,14 @@
               Cooling rate: -0.15°C/min (Nominal). No mechanical wear detected.
             </p>
           </div>
-          <button class="action-btn" style="width: 100%; justify-content: center;" onclick="openAIReportModal()">
-            <i data-lucide="file-text"></i> View AI Model Report
-          </button>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button class="action-btn" style="flex: 1; justify-content: center;" onclick="openAIReportModal()">
+              <i data-lucide="file-text" style="width: 14px; height: 14px;"></i> AI Model Report
+            </button>
+            <button class="action-btn" style="flex: 1; justify-content: center; color: var(--accent-cyan); border-color: rgba(6, 182, 212, 0.3);" onclick="openGroqClinicalBrief('fridge_1')">
+              <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> Groq AI Advisor
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -273,12 +320,17 @@
     <div class="tab-pane" id="tab-inventory">
       <div class="inventory-header">
         <div>
-          <h2 style="font-family: var(--font-heading); font-size: 1.6rem;">Vaccine Batch Inventory</h2>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem; color: #ffffff;">Vaccine Batch Inventory</h2>
           <p style="color: var(--text-muted); font-size: 0.9rem;">Heat exposure tracking (60-min budget, >12°C counts double)</p>
         </div>
-        <button class="action-btn" onclick="loadInventoryData()">
-          <i data-lucide="refresh-cw"></i> Refresh Inventory
-        </button>
+        <div class="inventory-actions">
+          <button class="btn-primary-action" id="btnAddBatchBtn" onclick="openAddBatchModal()">
+            <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i> Add New Batch
+          </button>
+          <button class="action-btn" onclick="loadInventoryData()">
+            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Refresh
+          </button>
+        </div>
       </div>
 
       <div class="batch-table-container">
@@ -287,7 +339,7 @@
             <tr>
               <th>Batch ID / QR</th>
               <th>Vaccine Name & Type</th>
-              <th>Current Fridge</th>
+              <th>Current Storage</th>
               <th>Heat-Exposure Budget</th>
               <th>Status</th>
               <th>Expiry Date</th>
@@ -313,7 +365,7 @@
           </p>
         </div>
         <button class="one-click-relocate-btn" id="oneClickRelocateBtn" style="display: none;" onclick="executeOneClickRelocation()">
-          <i data-lucide="shuffle"></i> 1-Click Relocate All Batches
+          <i data-lucide="shuffle" style="width: 18px; height: 18px;"></i> 1-Click Relocate All Batches
         </button>
       </div>
 
@@ -333,15 +385,15 @@
     <div class="tab-pane" id="tab-audit">
       <div class="ledger-controls">
         <div>
-          <h2 style="font-family: var(--font-heading); font-size: 1.6rem;">Cryptographic Hash-Chain Ledger</h2>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem; color: #ffffff;">Cryptographic Hash-Chain Ledger</h2>
           <p style="color: var(--text-muted); font-size: 0.9rem;">Immutable SHA-256 blockchain-style audit trail of all cold chain events</p>
         </div>
         <div style="display: flex; gap: 0.75rem;">
           <button class="tamper-test-btn" onclick="handleSimulateTamper()">
-            <i data-lucide="bug"></i> Simulate DB Tamper (Judges Test)
+            <i data-lucide="bug" style="width: 16px; height: 16px;"></i> Simulate DB Tamper (Judges Test)
           </button>
           <button class="verify-btn" onclick="handleVerifyChainIntegrity()">
-            <i data-lucide="shield-check"></i> Verify Integrity
+            <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i> Verify Integrity
           </button>
         </div>
       </div>
@@ -371,34 +423,219 @@
        MODALS
        ========================================================================= -->
 
-  <!-- 1. LOGIN / ROLE SWITCHER MODAL -->
-  <div class="modal-backdrop" id="loginModal">
+  <!-- 1. COMPREHENSIVE AUTH MODAL (SIGN IN & SIGN UP) -->
+  <div class="modal-backdrop" id="authModal">
     <div class="modal-box">
       <div class="modal-header">
-        <h3>Switch Role & Login</h3>
-        <button class="modal-close-btn" onclick="closeLoginModal()">&times;</button>
+        <h3 id="authModalTitle">ColdChain Authentication</h3>
+        <button class="modal-close-btn" onclick="closeAuthModal()">&times;</button>
       </div>
-      <div class="form-group">
-        <label>Select User / Role</label>
-        <select id="loginRoleSelect" onchange="autoFillLogin()">
-          <option value="admin">Admin (System Controls, Alarm Reset)</option>
-          <option value="pharmacist">Pharmacist (Batch Inventory, 1-Click Relocation)</option>
-          <option value="inspector">Inspector (Read-only, Audit Verification)</option>
-        </select>
+
+      <!-- Tab Switcher -->
+      <div class="auth-tab-bar">
+        <button class="auth-tab-btn active" id="tabBtnSignIn" onclick="switchAuthTab('signin')">
+          <i data-lucide="log-in" style="width: 14px; height: 14px; display: inline-block; vertical-align: -2px;"></i> Sign In
+        </button>
+        <button class="auth-tab-btn" id="tabBtnSignUp" onclick="switchAuthTab('signup')">
+          <i data-lucide="user-plus" style="width: 14px; height: 14px; display: inline-block; vertical-align: -2px;"></i> Create Account
+        </button>
       </div>
-      <div class="form-group">
-        <label>Username</label>
-        <input type="text" id="loginUsername" value="admin">
+
+      <!-- TAB PANE: SIGN IN -->
+      <div id="authPaneSignIn">
+        <!-- Quick Demo Role Chips for Hackathon Testing -->
+        <div class="quick-roles-bar">
+          <span class="quick-roles-label">1-Click Demo Credentials (Judges / Testing)</span>
+          <div class="quick-roles-chips">
+            <button class="role-chip" type="button" onclick="quickFillLogin('admin')">Admin (Full Control)</button>
+            <button class="role-chip" type="button" onclick="quickFillLogin('pharmacist')">Pharmacist (Relocation)</button>
+            <button class="role-chip" type="button" onclick="quickFillLogin('inspector')">Inspector (Audit)</button>
+          </div>
+        </div>
+
+        <form id="signInForm" onsubmit="event.preventDefault(); handleLoginSubmit();">
+          <div class="form-group">
+            <label for="loginUsername">Username</label>
+            <div class="input-with-icon">
+              <i data-lucide="user"></i>
+              <input type="text" id="loginUsername" placeholder="e.g. admin" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <div class="input-with-icon">
+              <i data-lucide="lock"></i>
+              <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
+              <button type="button" class="toggle-pw-btn" onclick="togglePasswordVisibility('loginPassword', this)">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="btnSignInSubmit">
+            <i data-lucide="log-in" style="width: 18px; height: 18px;"></i> Sign In
+          </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+          Need an account? <a href="#" onclick="switchAuthTab('signup'); return false;" style="color: var(--accent-cyan); text-decoration: none; font-weight: 600;">Create Account</a>
+        </p>
       </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="loginPassword" value="Admin@123">
+
+      <!-- TAB PANE: SIGN UP (CREATE ACCOUNT) -->
+      <div id="authPaneSignUp" style="display: none;">
+        <form id="signUpForm" onsubmit="event.preventDefault(); handleRegisterSubmit();">
+          <div class="form-group">
+            <label for="regUsername">Choose Username</label>
+            <div class="input-with-icon">
+              <i data-lucide="user"></i>
+              <input type="text" id="regUsername" placeholder="Enter alphanumeric username" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Select Your Operational Role</label>
+            <div class="role-picker-grid">
+              <div class="role-picker-card selected" id="cardRolePharm" onclick="selectRegisterRole('Pharmacist')">
+                <div class="role-picker-icon" style="color: var(--safe-green);">
+                  <i data-lucide="package-check" style="width: 18px; height: 18px;"></i>
+                </div>
+                <div class="role-picker-title">Pharmacist</div>
+                <div class="role-picker-desc">Inventory, batch creation & relocation</div>
+              </div>
+
+              <div class="role-picker-card" id="cardRoleInspect" onclick="selectRegisterRole('Inspector')">
+                <div class="role-picker-icon" style="color: var(--role-inspector);">
+                  <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+                </div>
+                <div class="role-picker-title">Inspector</div>
+                <div class="role-picker-desc">Ledger verification & regulatory audit</div>
+              </div>
+
+              <div class="role-picker-card" id="cardRoleAdmin" onclick="selectRegisterRole('Admin')">
+                <div class="role-picker-icon" style="color: var(--role-admin);">
+                  <i data-lucide="wrench" style="width: 18px; height: 18px;"></i>
+                </div>
+                <div class="role-picker-title">Admin</div>
+                <div class="role-picker-desc">Alarm overrides & system controls</div>
+              </div>
+            </div>
+            <input type="hidden" id="regRole" value="Pharmacist">
+          </div>
+
+          <div class="form-group">
+            <label for="regPassword">Password (Min 6 chars)</label>
+            <div class="input-with-icon">
+              <i data-lucide="lock"></i>
+              <input type="password" id="regPassword" placeholder="Create strong password" required minlength="6" autocomplete="new-password">
+              <button type="button" class="toggle-pw-btn" onclick="togglePasswordVisibility('regPassword', this)">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="regConfirmPassword">Confirm Password</label>
+            <div class="input-with-icon">
+              <i data-lucide="check-circle-2"></i>
+              <input type="password" id="regConfirmPassword" placeholder="Confirm your password" required minlength="6" autocomplete="new-password">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="btnSignUpSubmit">
+            <i data-lucide="user-plus" style="width: 18px; height: 18px;"></i> Create Account & Sign In
+          </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+          Already have an account? <a href="#" onclick="switchAuthTab('signin'); return false;" style="color: var(--accent-cyan); text-decoration: none; font-weight: 600;">Sign In</a>
+        </p>
       </div>
-      <button class="btn-primary" onclick="handleLoginSubmit()">Sign In</button>
+
     </div>
   </div>
 
-  <!-- 2. QR CODE DISPLAY MODAL -->
+  <!-- 2. GROQ AI CLINICAL ADVISOR MODAL -->
+  <div class="modal-backdrop" id="groqAdvisorModal">
+    <div class="modal-box" style="max-width: 680px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <div class="brand-icon" style="width: 34px; height: 34px;">
+            <i data-lucide="bot" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3>Groq AI Clinical Advisor</h3>
+            <p style="font-size: 0.75rem; color: var(--text-muted);">Real-time Telemetry Assessment (Qwen 3.8-27B)</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeGroqAdvisorModal()">&times;</button>
+      </div>
+
+      <div id="groqAdvisorContent">
+        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+          <div class="pulse-dot" style="margin: 0 auto 1rem; width: 14px; height: 14px;"></div>
+          Consulting Groq Clinical Inference Engine...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ADD VACCINE BATCH MODAL -->
+  <div class="modal-backdrop" id="addBatchModal">
+    <div class="modal-box" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3>Register New Vaccine Batch</h3>
+        <button class="modal-close-btn" onclick="closeAddBatchModal()">&times;</button>
+      </div>
+
+      <form id="addBatchForm" onsubmit="event.preventDefault(); handleAddBatchSubmit();">
+        <div class="form-group">
+          <label for="newBatchId">Batch Identifier (Unique Code)</label>
+          <input type="text" id="newBatchId" placeholder="e.g. BATCH-FLU-2026" required>
+        </div>
+
+        <div class="form-group">
+          <label for="newBatchName">Vaccine Product Name</label>
+          <input type="text" id="newBatchName" placeholder="e.g. Quadrivalent Influenza" required>
+        </div>
+
+        <div class="form-group">
+          <label for="newBatchType">Vaccine Formulation Type</label>
+          <select id="newBatchType" required>
+            <option value="mRNA">mRNA (Pfizer/Moderna - Highly Heat Sensitive)</option>
+            <option value="Live-Attenuated">Live-Attenuated (Rotavirus/MMR)</option>
+            <option value="Inactivated">Inactivated (Polio IPV/Hepatitis A)</option>
+            <option value="Subunit">Subunit / Protein Conjugate</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="newBatchFridge">Target Storage Unit</label>
+          <select id="newBatchFridge" required>
+            <option value="fridge_1">Main Cold Room (Fridge 1)</option>
+            <option value="fridge_2">Relocation Reserve (Fridge 2)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="newBatchExpiry">Expiration Date</label>
+          <input type="date" id="newBatchExpiry" required>
+        </div>
+
+        <div class="form-group">
+          <label for="newBatchBudget">Allowed Heat Exposure Budget (Minutes)</label>
+          <input type="number" id="newBatchBudget" value="60" min="10" max="240" required>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btnAddBatchSubmit">
+          <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> Register Vaccine Batch
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. QR CODE DISPLAY MODAL -->
   <div class="modal-backdrop" id="qrModal">
     <div class="modal-box" style="text-align: center;">
       <div class="modal-header">
@@ -409,13 +646,13 @@
         <canvas id="qrCanvas" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);"></canvas>
       </div>
       <p id="qrModalDesc" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;"></p>
-      <a id="qrPublicLink" href="#" target="_blank" class="btn-primary" style="display: inline-block; text-decoration: none;">
-        Open Public Verification Certificate (No Login)
+      <a id="qrPublicLink" href="#" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; align-items: center; justify-content: center; gap: 0.5rem;">
+        <i data-lucide="external-link" style="width: 18px; height: 18px;"></i> Open Public Verification Certificate (No Login)
       </a>
     </div>
   </div>
 
-  <!-- 3. AI REPORT MODAL -->
+  <!-- 5. AI REPORT MODAL -->
   <div class="modal-backdrop" id="aiReportModal">
     <div class="modal-box" style="max-width: 720px;">
       <div class="modal-header">
@@ -423,12 +660,12 @@
         <button class="modal-close-btn" onclick="closeAIReportModal()">&times;</button>
       </div>
       <div id="aiReportContent" style="max-height: 480px; overflow-y: auto; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
-        <!-- Filled via JS -->
+        <!-- Dynamically filled -->
       </div>
     </div>
   </div>
 
-  <!-- 4. AUDIT INTEGRITY RESULTS MODAL -->
+  <!-- 6. AUDIT INTEGRITY RESULTS MODAL -->
   <div class="modal-backdrop" id="integrityModal">
     <div class="modal-box" style="text-align: center;">
       <div class="modal-header">
@@ -436,7 +673,7 @@
         <button class="modal-close-btn" onclick="closeIntegrityModal()">&times;</button>
       </div>
       <div id="integrityModalIcon" style="margin: 1rem 0;"></div>
-      <h4 id="integrityModalHeader" style="font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 0.5rem;"></h4>
+      <h4 id="integrityModalHeader" style="font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 0.5rem; color: #ffffff;"></h4>
       <p id="integrityModalDetails" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;"></p>
       <button class="btn-primary" onclick="closeIntegrityModal()">Done</button>
     </div>
