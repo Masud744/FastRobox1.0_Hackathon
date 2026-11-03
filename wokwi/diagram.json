@@ -3,49 +3,49 @@
   "author": "ColdChain Team",
   "editor": "wokwi",
   "parts": [
-    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 50, "left": 100, "attrs": {} },
-    { "type": "wokwi-ssd1306", "id": "oled", "top": -140, "left": -20, "attrs": { "i2cAddress": "0x3c" } },
-    { "type": "wokwi-dht22", "id": "dht", "top": -140, "left": 260, "attrs": { "temperature": "4.5", "humidity": "45" } },
-    { "type": "wokwi-relay-module", "id": "relay", "top": 280, "left": 260, "attrs": {} },
-    { "type": "wokwi-pushbutton", "id": "btn_door", "top": 280, "left": -60, "attrs": { "color": "red", "label": "Door Switch" } },
-    { "type": "wokwi-pushbutton", "id": "btn_power", "top": 360, "left": -60, "attrs": { "color": "orange", "label": "AC Grid/Battery" } },
-    { "type": "wokwi-buzzer", "id": "buzzer", "top": 380, "left": 140, "attrs": { "hasVisualOutput": "1" } },
-    { "type": "wokwi-led", "id": "led_red", "top": 120, "left": 350, "attrs": { "color": "red", "label": "Discard Alarm" } },
-    { "type": "wokwi-led", "id": "led_green", "top": 180, "left": 350, "attrs": { "color": "green", "label": "Normal Safe" } },
-    { "type": "wokwi-resistor", "id": "r1", "top": 150, "left": 410, "attrs": { "value": "220" } },
-    { "type": "wokwi-resistor", "id": "r2", "top": 210, "left": 410, "attrs": { "value": "220" } }
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 40, "left": 80, "attrs": {} },
+    { "type": "wokwi-ssd1306", "id": "oled", "top": -40, "left": -100, "attrs": { "i2cAddress": "0x3c" } },
+    { "type": "wokwi-dht22", "id": "dht", "top": -40, "left": 260, "attrs": { "temperature": "4.5", "humidity": "45" } },
+    { "type": "wokwi-relay-module", "id": "relay", "top": 240, "left": 260, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "btn_door", "top": 240, "left": -60, "attrs": { "color": "red", "label": "Door Switch" } },
+    { "type": "wokwi-pushbutton", "id": "btn_power", "top": 320, "left": -60, "attrs": { "color": "orange", "label": "AC Grid/Battery" } },
+    { "type": "wokwi-buzzer", "id": "buzzer", "top": 330, "left": 140, "attrs": { "hasVisualOutput": "1" } },
+    { "type": "wokwi-led", "id": "led_red", "top": 100, "left": 350, "attrs": { "color": "red", "label": "Discard Alarm" } },
+    { "type": "wokwi-led", "id": "led_green", "top": 160, "left": 350, "attrs": { "color": "green", "label": "Normal Safe" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": 130, "left": 410, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "top": 190, "left": 410, "attrs": { "value": "220" } }
   ],
   "connections": [
-    [ "esp:TX", "$serialMonitor:RX", "", [] ],
-    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
 
     [ "oled:VCC", "esp:3V3", "red", [ "v0" ] ],
     [ "oled:GND", "esp:GND.1", "black", [ "v0" ] ],
-    [ "oled:SDA", "esp:21", "blue", [ "v0" ] ],
-    [ "oled:SCL", "esp:22", "cyan", [ "v0" ] ],
+    [ "oled:SDA", "esp:D21", "blue", [ "v0" ] ],
+    [ "oled:SCL", "esp:D22", "cyan", [ "v0" ] ],
 
     [ "dht:VCC", "esp:3V3", "red", [ "v0" ] ],
-    [ "dht:SDA", "esp:4", "orange", [ "v0" ] ],
+    [ "dht:SDA", "esp:D4", "orange", [ "v0" ] ],
     [ "dht:GND", "esp:GND.1", "black", [ "v0" ] ],
 
     [ "relay:VCC", "esp:VIN", "red", [ "v0" ] ],
     [ "relay:GND", "esp:GND.2", "black", [ "v0" ] ],
-    [ "relay:IN", "esp:5", "purple", [ "v0" ] ],
+    [ "relay:IN", "esp:D5", "purple", [ "v0" ] ],
 
-    [ "btn_door:1.r", "esp:18", "green", [ "v0" ] ],
+    [ "btn_door:1.r", "esp:D18", "green", [ "v0" ] ],
     [ "btn_door:2.r", "esp:GND.2", "black", [ "v0" ] ],
 
-    [ "btn_power:1.r", "esp:19", "yellow", [ "v0" ] ],
+    [ "btn_power:1.r", "esp:D19", "yellow", [ "v0" ] ],
     [ "btn_power:2.r", "esp:GND.2", "black", [ "v0" ] ],
 
-    [ "buzzer:2", "esp:13", "gold", [ "v0" ] ],
+    [ "buzzer:2", "esp:D13", "gold", [ "v0" ] ],
     [ "buzzer:1", "esp:GND.2", "black", [ "v0" ] ],
 
-    [ "esp:2", "led_red:A", "red", [ "v0" ] ],
+    [ "esp:D2", "led_red:A", "red", [ "v0" ] ],
     [ "led_red:C", "r1:1", "black", [ "v0" ] ],
     [ "r1:2", "esp:GND.2", "black", [ "v0" ] ],
 
-    [ "esp:14", "led_green:A", "green", [ "v0" ] ],
+    [ "esp:D14", "led_green:A", "green", [ "v0" ] ],
     [ "led_green:C", "r2:1", "black", [ "v0" ] ],
     [ "r2:2", "esp:GND.2", "black", [ "v0" ] ]
   ],

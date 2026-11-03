@@ -18,20 +18,21 @@
 #include <Adafruit_SSD1306.h>
 #include <DHT.h>
 #include <ArduinoJson.h>
+#include "time.h"
 #include "mbedtls/md.h"
 
 // =========================================================================
-// HARDWARE PIN DEFINITIONS
+// HARDWARE PIN DEFINITIONS (Matched to wokwi-esp32-devkit-v1)
 // =========================================================================
-#define PIN_DHT22          4     // DHT22 Temperature & Humidity Sensor
-#define PIN_RELAY_COMP     5     // Compressor Relay Output (Active HIGH)
-#define PIN_DOOR_SWITCH    18    // Pushbutton Door Switch (Active LOW with internal pull-up)
-#define PIN_POWER_SWITCH   19    // Pushbutton Power Mode Toggle (Active LOW)
-#define PIN_BUZZER         13    // Piezo Buzzer for 60s Door Breach Alarm
-#define PIN_LED_RED        2     // Red LED: Discard / Breach Latched Alarm
-#define PIN_LED_GREEN      14    // Green LED: Normal Safe Range (2.0°C - 8.0°C)
+#define PIN_DHT22          4     // GPIO 4 (D4) - DHT22 Temperature & Humidity
+#define PIN_RELAY_COMP     5     // GPIO 5 (D5) - Compressor Relay Output (Active HIGH)
+#define PIN_DOOR_SWITCH    18    // GPIO 18 (D18) - Door Switch (Active LOW with internal pull-up)
+#define PIN_POWER_SWITCH   19    // GPIO 19 (D19) - Power Mode Toggle (Active LOW)
+#define PIN_BUZZER         13    // GPIO 13 (D13) - Piezo Buzzer
+#define PIN_LED_RED        2     // GPIO 2 (D2) - Red LED: Discard / Breach Alarm
+#define PIN_LED_GREEN      14    // GPIO 14 (D14) - Green LED: Normal Safe Range (2°C - 8°C)
 
-// OLED Display Config (128x64 I2C SSD1306)
+// OLED Display Config (128x64 I2C SSD1306 on GPIO 21 SDA, GPIO 22 SCL)
 #define SCREEN_WIDTH       128
 #define SCREEN_HEIGHT      64
 #define OLED_RESET         -1
@@ -82,7 +83,6 @@ bool redAlarmLatched = false;
 
 // Timers
 unsigned long lastTelemetryMillis = 0;
-unsigned long epochTimeOffset = 1793720000000ULL; // Approximate baseline epoch ms
 
 // 30-Minute Telemetry Offline Buffer (360 packets @ 5-sec interval)
 struct TelemetryPacket {
@@ -91,7 +91,7 @@ struct TelemetryPacket {
   int doorSec;
   bool isBattery;
   bool compOn;
-  unsigned long long timestamp;
+  uint64_t timestamp;
   char nonce[16];
   char signature[65];
 };
@@ -102,8 +102,7 @@ int bufferHead = 0;
 int bufferCount = 0;
 
 // =========================================================================
-// CRYPTOGRAPHIC HMAC-SHA256 SIGNATURE ENGINE
-// Message format: timestamp:nonce:serializedPayload
+// TIME & HMAC-SHA256 SIGNATURE ENGINE
 // =========================================================================
 String generateNonce() {
   char n[16];
@@ -111,13 +110,23 @@ String generateNonce() {
   return String(n);
 }
 
-unsigned long long getCurrentTimestamp() {
-  return epochTimeOffset + (unsigned long long)millis();
+// Generates 64-bit epoch timestamp (using NTP or calibrated 2026 baseline)
+uint64_t getCurrentTimestamp() {
+  time_t nowSec;
+  time(&nowSec);
+  if (nowSec > 100000000) {
+    return ((uint64_t)nowSec * 1000ULL) + (millis() % 1000);
+  }
+  // Baseline 2026 epoch fallback (64-bit unsigned, prevents 32-bit overflow)
+  static const uint64_t baseEpochMs = 1793727600000ULL;
+  return baseEpochMs + (uint64_t)millis();
 }
 
-String computeHMAC(const String& serializedPayload, unsigned long long timestamp, const String& nonce) {
+String computeHMAC(const String& serializedPayload, uint64_t timestamp, const String& nonce) {
   // Exact format expected by backend: timestamp:nonce:serializedPayload
-  String message = String(timestamp) + ":" + nonce + ":" + serializedPayload;
+  char tsBuf[32];
+  sprintf(tsBuf, "%llu", (unsigned long long)timestamp);
+  String message = String(tsBuf) + ":" + nonce + ":" + serializedPayload;
 
   byte hmacResult[32];
   mbedtls_md_context_t ctx;
@@ -177,9 +186,9 @@ void updateOLEDDisplay() {
     display.println("ACTIVE (ON)");
   } else {
     unsigned long offElapsed = millis() - compressorLastOffTime;
-    if (offElapsed < COMP_MIN_OFF_DELAY) {
+    if (compressorLastOffTime > 0 && offElapsed < COMP_MIN_OFF_DELAY) {
       int delayLeft = (COMP_MIN_OFF_DELAY - offElapsed) / 1000;
-      display.print("OFF (Delay:");
+      display.print("OFF (Wait:");
       display.print(delayLeft);
       display.println("s)");
     } else {
@@ -212,6 +221,9 @@ void updateOLEDDisplay() {
 
   display.display();
 }
+
+// Forward declaration
+void sendTelemetryPacket();
 
 // =========================================================================
 // COMPRESSOR HYSTERESIS CONTROL (Task 1)
@@ -351,7 +363,7 @@ void flushOfflineBuffer() {
 
   Serial.printf("[SYNC] Reconnected! Flushing %d buffered readings in chronological order...\n", bufferCount);
 
-  // Send packets in chunks of 5 to avoid exceeding MQTT MTU
+  // Send packets in chunks of 5
   while (bufferCount > 0) {
     StaticJsonDocument<2048> doc;
     JsonArray arr = doc.to<JsonArray>();
@@ -369,7 +381,9 @@ void flushOfflineBuffer() {
       payloadObj["power_source"] = offlineBuffer[idx].isBattery ? "BATTERY" : "GRID";
       payloadObj["compressor_state"] = offlineBuffer[idx].compOn ? "ON" : "OFF";
 
-      pObj["timestamp"] = offlineBuffer[idx].timestamp;
+      char tsBuf[32];
+      sprintf(tsBuf, "%llu", (unsigned long long)offlineBuffer[idx].timestamp);
+      pObj["timestamp"] = serialized(tsBuf);
       pObj["nonce"] = offlineBuffer[idx].nonce;
       pObj["signature"] = offlineBuffer[idx].signature;
     }
@@ -380,7 +394,7 @@ void flushOfflineBuffer() {
 
     bufferHead = (bufferHead + chunkSize) % MAX_BUFFER_CAPACITY;
     bufferCount -= chunkSize;
-    delay(50); // Short transmission gap
+    delay(50);
   }
 
   Serial.println("[SYNC] Offline sync completed successfully without duplicates!");
@@ -388,7 +402,7 @@ void flushOfflineBuffer() {
 
 void sendTelemetryPacket() {
   lastTelemetryMillis = millis();
-  unsigned long long timestamp = getCurrentTimestamp();
+  uint64_t timestamp = getCurrentTimestamp();
   String nonce = generateNonce();
 
   const char* doorStr = doorIsOpen ? "OPEN" : "CLOSED";
@@ -408,7 +422,9 @@ void sendTelemetryPacket() {
   payloadObj["power_source"] = pwrStr;
   payloadObj["compressor_state"] = compStr;
 
-  doc["timestamp"] = timestamp;
+  char tsBuf[32];
+  sprintf(tsBuf, "%llu", (unsigned long long)timestamp);
+  doc["timestamp"] = serialized(tsBuf);
   doc["nonce"] = nonce;
   doc["signature"] = signature;
 
@@ -427,23 +443,29 @@ void sendTelemetryPacket() {
 }
 
 // =========================================================================
-// WI-FI & MQTT CONNECTION HANDLER
+// WI-FI & MQTT CONNECTION HANDLER (Non-blocking)
 // =========================================================================
 void ensureNetworkConnection() {
   if (WiFi.status() != WL_CONNECTED) {
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    int retries = 0;
-    while (WiFi.status() != WL_CONNECTED && retries < 10) {
-      delay(200);
-      retries++;
+    static unsigned long lastWifiAttempt = 0;
+    if (millis() - lastWifiAttempt > 8000 || lastWifiAttempt == 0) {
+      lastWifiAttempt = millis();
+      Serial.println("[WIFI] Connecting to Wokwi-GUEST...");
+      WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     }
+    return;
   }
 
   if (WiFi.status() == WL_CONNECTED && !mqttClient.connected()) {
-    String clientId = "ESP32_ColdChain_" + String(random(0xffff), HEX);
-    if (mqttClient.connect(clientId.c_str())) {
-      Serial.println("[MQTT] Connected to Broker successfully.");
-      flushOfflineBuffer();
+    static unsigned long lastMqttAttempt = 0;
+    if (millis() - lastMqttAttempt > 5000 || lastMqttAttempt == 0) {
+      lastMqttAttempt = millis();
+      String clientId = "ESP32_ColdChain_" + String(random(0xffff), HEX);
+      Serial.println("[MQTT] Connecting to HiveMQ Broker...");
+      if (mqttClient.connect(clientId.c_str())) {
+        Serial.println("[MQTT] Connected to Broker successfully.");
+        flushOfflineBuffer();
+      }
     }
   }
 }
@@ -453,7 +475,7 @@ void ensureNetworkConnection() {
 // =========================================================================
 void setup() {
   Serial.begin(115200);
-  delay(500);
+  delay(300);
   Serial.println("\n====================================================");
   Serial.println("  COLDCHAIN ESP32 VACCINE NODE STARTING");
   Serial.println("====================================================");
@@ -487,6 +509,9 @@ void setup() {
     display.display();
   }
 
+  // Initialize NTP time sync (in background)
+  configTime(0, 0, "pool.ntp.org", "time.google.com");
+
   // Configure MQTT
   mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
   mqttClient.setBufferSize(1024);
@@ -499,7 +524,7 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
-  // 1. Maintain Wi-Fi and MQTT
+  // 1. Maintain Wi-Fi and MQTT in background
   if (!mqttClient.connected()) {
     ensureNetworkConnection();
   } else {
