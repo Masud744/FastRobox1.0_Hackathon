@@ -8,4 +8,9 @@ node_modules/
 
 # Environment & local files
 .env
+.env.*
+!.env.example
 .DS_Store
+
+# Supabase temp & secrets
+supabase/.temp/

@@ -27,6 +27,8 @@ const {
   confirmRelocation,
   getAIReport
 } = require('./aiEngine');
+const { startMQTTBroker } = require('./mqttBroker');
+const { generateClinicalBrief, generateCompressorDiagnostic } = require('./groqAdvisor');
 
 const path = require('path');
 
@@ -320,6 +322,25 @@ app.get('/api/ai/report', (req, res) => {
   res.json(getAIReport());
 });
 
+app.get('/api/ai/clinical-brief/:fridgeId', async (req, res) => {
+  try {
+    const fridgeId = req.params.fridgeId;
+    const plan = generateRelocationRecommendation(fridgeId);
+    const prediction = predict30MinAhead(fridgeId);
+    const brief = await generateClinicalBrief({
+      sourceFridgeName: plan.sourceFridgeName,
+      targetFridgeName: plan.targetFridgeName,
+      currentTemp: prediction.currentTemp,
+      predictedTemp30Min: prediction.predictedTemp30Min,
+      batches: plan.batchesToRelocate,
+      reason: plan.reason
+    });
+    res.json({ plan, brief });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // =========================================================================
 // 7. CRYPTOGRAPHIC HASH CHAIN AUDIT & TAMPER DETECTION
 // =========================================================================
@@ -400,6 +421,7 @@ if (require.main === module) {
     console.log(`  HTTP Port: ${config.PORT}`);
     console.log(`  WebSocket Server: ws://localhost:${config.PORT}`);
     console.log(`====================================================`);
+    startMQTTBroker(broadcast);
   });
 }
 

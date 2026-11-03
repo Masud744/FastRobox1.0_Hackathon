@@ -170,6 +170,9 @@ async function runTests() {
       SELECT * FROM alerts WHERE fridge_id = 'fridge_1' AND alert_type = 'POWER_OUTAGE'
     `).get();
     assert.ok(powerAlert, 'Power outage alert must be recorded');
+
+    // Clean up temporary test batch
+    db.prepare(`DELETE FROM vaccine_batches WHERE id = 'BATCH-TEST-HEAT'`).run();
   });
 
   console.log('\n====================================================');
