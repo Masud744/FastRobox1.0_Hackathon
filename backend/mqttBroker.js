@@ -45,25 +45,35 @@ function handleIncomingTelemetry(topic, messageBuffer) {
       return;
     }
 
-    // Verify HMAC-SHA256 signature & freshness
-    let authResult = verifyDeviceTelemetry(packet);
-    if (!authResult.valid && authResult.error === 'STALE_TIMESTAMP') {
-      // In IoT simulation or edge devices without real-time clock, verify HMAC signature directly
-      const { signPayload } = require('./security');
-      const expectedSig = signPayload(packet.payload, packet.timestamp, packet.nonce, config.DEVICE_HMAC_SECRET);
-      if (expectedSig === packet.signature) {
-        console.log(`[MQTT] Authenticated valid device HMAC with clock skew (${packet.timestamp})`);
-        authResult = { valid: true };
+    // 1. Replay attack protection (check if nonce was already processed)
+    const existingNonce = db.prepare('SELECT nonce FROM device_nonces WHERE nonce = ?').get(nonce);
+    if (existingNonce) {
+      console.warn(`[MQTT SECURITY WARNING] Duplicate nonce ${nonce} detected (replay attack blocked)`);
+      return;
+    }
+
+    // 2. Cryptographic HMAC-SHA256 signature verification (supports exact & 2-decimal C++ float serialization)
+    const crypto = require('crypto');
+    const secretKey = config.DEVICE_HMAC_SECRET;
+    const p1 = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    const sig1 = crypto.createHmac('sha256', secretKey).update(`${timestamp}:${nonce}:${p1}`).digest('hex');
+
+    let signatureValid = (sig1 === signature);
+    if (!signatureValid && payload && typeof payload.temperature === 'number') {
+      const p2 = p1.replace(new RegExp(`"temperature":${payload.temperature}`), `"temperature":${Number(payload.temperature).toFixed(2)}`);
+      const sig2 = crypto.createHmac('sha256', secretKey).update(`${timestamp}:${nonce}:${p2}`).digest('hex');
+      if (sig2 === signature) {
+        signatureValid = true;
       }
     }
 
-    if (!authResult.valid) {
-      const { signPayload } = require('./security');
-      const expectedSig = signPayload(packet.payload, packet.timestamp, packet.nonce, config.DEVICE_HMAC_SECRET);
-      console.warn(`[MQTT SECURITY WARNING] Signature mismatch: expected ${expectedSig} but got ${packet.signature}`);
-      console.warn(`[MQTT DEBUG] Payload:`, JSON.stringify(packet.payload), 'Timestamp:', packet.timestamp, 'Nonce:', packet.nonce);
+    if (!signatureValid) {
+      console.warn(`[MQTT SECURITY WARNING] Signature mismatch: packet rejected.`);
       return;
     }
+
+    // Record nonce to prevent replay
+    db.prepare('INSERT INTO device_nonces (nonce, timestamp) VALUES (?, ?)').run(nonce, Date.now());
 
     const fridgeId = payload.fridge_id;
     const now = Date.now();
