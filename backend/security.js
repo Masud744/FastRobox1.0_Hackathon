@@ -69,10 +69,25 @@ function verifyDeviceTelemetry(packet, secretKey = config.DEVICE_HMAC_SECRET) {
 
   // 3. Verify HMAC-SHA256 Signature
   const expectedSignature = signPayload(payload, timestamp, nonce, secretKey);
-  const expectedBuf = Buffer.from(expectedSignature, 'hex');
+  let expectedBuf = Buffer.from(expectedSignature, 'hex');
   const actualBuf = Buffer.from(signature, 'hex');
 
-  if (expectedBuf.length !== actualBuf.length || !crypto.timingSafeEqual(expectedBuf, actualBuf)) {
+  let signatureValid = expectedBuf.length === actualBuf.length && crypto.timingSafeEqual(expectedBuf, actualBuf);
+
+  // If float serialization formatting difference (e.g. 21.9 vs 21.90 on C++ ArduinoJson), check 2-decimal format
+  if (!signatureValid && payload && typeof payload.temperature === 'number') {
+    const fixedPayload = JSON.stringify(payload).replace(
+      new RegExp(`"temperature":${payload.temperature}`),
+      `"temperature":${Number(payload.temperature).toFixed(2)}`
+    );
+    const fixedSig = crypto.createHmac('sha256', secretKey).update(`${timestamp}:${nonce}:${fixedPayload}`).digest('hex');
+    const fixedBuf = Buffer.from(fixedSig, 'hex');
+    if (fixedBuf.length === actualBuf.length && crypto.timingSafeEqual(fixedBuf, actualBuf)) {
+      signatureValid = true;
+    }
+  }
+
+  if (!signatureValid) {
     return {
       valid: false,
       error: 'INVALID_SIGNATURE',

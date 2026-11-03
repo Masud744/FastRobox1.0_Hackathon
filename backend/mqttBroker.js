@@ -58,7 +58,10 @@ function handleIncomingTelemetry(topic, messageBuffer) {
     }
 
     if (!authResult.valid) {
-      console.warn(`[MQTT SECURITY WARNING] Rejected invalid packet: ${authResult.message || authResult.error}`);
+      const { signPayload } = require('./security');
+      const expectedSig = signPayload(packet.payload, packet.timestamp, packet.nonce, config.DEVICE_HMAC_SECRET);
+      console.warn(`[MQTT SECURITY WARNING] Signature mismatch: expected ${expectedSig} but got ${packet.signature}`);
+      console.warn(`[MQTT DEBUG] Payload:`, JSON.stringify(packet.payload), 'Timestamp:', packet.timestamp, 'Nonce:', packet.nonce);
       return;
     }
 
