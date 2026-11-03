@@ -2,7 +2,10 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v24.x-green.svg)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-30%2F30%20PASS-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-33%2F33%20PASS-brightgreen.svg)]()
+[![MQTT](https://img.shields.io/badge/MQTT-Aedes%20%2B%20HiveMQ-orange.svg)]()
+[![Cloud](https://img.shields.io/badge/Supabase-PostgreSQL%2017-emerald.svg)]()
+[![AI](https://img.shields.io/badge/Groq%20AI-Qwen%203.8--27B-purple.svg)]()
 [![Security](https://img.shields.io/badge/HMAC--SHA256-Active-cyan.svg)]()
 [![Ledger](https://img.shields.io/badge/Cryptographic%20Hash%20Chain-Verified-emerald.svg)]()
 
@@ -69,26 +72,26 @@ npm install
 ```
 
 ### 2. Run All Automated Test Suites
-ColdChain includes 30 automated integration tests covering security, business logic, AI, and APIs:
+ColdChain includes 33 automated integration tests covering security, business logic, AI, APIs, and MQTT:
 ```bash
-# Run Phase 1 Tests (DB, RBAC, HMAC Security, Hash Chain)
-node tests/test_phase1.js
-
-# Run Phase 2 Tests (Heat Budget, 30m Offline Sync, Door/Power Alerts)
-node tests/test_phase2.js
-
-# Run Phase 3 Tests (AI 30m Forecast, Compressor Health, Relocation)
-node tests/test_phase3.js
-
-# Run API Integration Tests
-node tests/test_api_server.js
+# Run all 33 tests in one command
+npm test
 ```
 
-### 3. Start the Server
+### 3. ESP32 Wokwi Hardware Simulation (Task 1 & Task 3)
+* Open [https://wokwi.com/projects/new/esp32](https://wokwi.com/projects/new/esp32)
+* Copy `wokwi/sketch.ino` into `sketch.ino` and `wokwi/diagram.json` into `diagram.json`.
+* Add `PubSubClient`, `Adafruit SSD1306`, `Adafruit GFX Library`, `DHT sensor library`, and `ArduinoJson` to Library Manager.
+* Click **Play** ▶️ to simulate live OLED, Compressor Hysteresis with 60s delay, Door breach alarm buzzer, and MQTT telemetry streaming.
+* See [wokwi/README.md](file:///home/shahriar-alom-masud/Projects/Hackathon/wokwi/README.md) for full hardware details and pinout diagrams.
+
+### 4. Start the Server
 ```bash
 npm start
 ```
 * **Dashboard:** [http://localhost:5000](http://localhost:5000)
+* **Embedded MQTT Broker:** `mqtt://localhost:1883`
+* **Public HiveMQ Bridge:** `broker.hivemq.com:1883` (Topic: `coldchain_fastrobox/+/telemetry`)
 * **Public QR Check:** [http://localhost:5000/verify/BATCH-CV19-001](http://localhost:5000/verify/BATCH-CV19-001)
 
 ### 4. Default RBAC Credentials

@@ -142,9 +142,9 @@ function handleIncomingTelemetry(topic, messageBuffer) {
 /**
  * Start Embedded Aedes MQTT Broker & Optional Public Cloud Bridge
  */
-async function startMQTTBroker(broadcastFn) {
+async function startMQTTBroker(broadcastFn, customPort = null) {
   broadcastCallback = broadcastFn;
-  const mqttPort = config.MQTT_PORT || 1883;
+  const mqttPort = customPort || config.MQTT_PORT || 1883;
 
   // 1. Embedded Aedes MQTT Broker (Local TCP Port 1883)
   aedesBroker = await Aedes.createBroker();

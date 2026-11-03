@@ -13,21 +13,23 @@ async function runMqttTests() {
   let passed = 0;
   let failed = 0;
 
-  // Start MQTT broker
+  const TEST_PORT = 1888;
+
+  // Start MQTT broker on isolated test port
   let lastBroadcast = null;
-  await startMQTTBroker(data => { lastBroadcast = data; });
+  await startMQTTBroker(data => { lastBroadcast = data; }, TEST_PORT);
 
   // Give broker 500ms to bind
   await new Promise(r => setTimeout(r, 500));
 
-  const client = mqtt.connect(`mqtt://localhost:${config.MQTT_PORT || 1883}`, {
+  const client = mqtt.connect(`mqtt://localhost:${TEST_PORT}`, {
     clientId: 'test_client_' + Date.now(),
     connectTimeout: 4000
   });
 
   await new Promise((resolve, reject) => {
     client.on('connect', () => {
-      console.log('  ✔ [PASS] Connected to embedded Aedes MQTT broker on port ' + (config.MQTT_PORT || 1883));
+      console.log('  ✔ [PASS] Connected to embedded Aedes MQTT broker on port ' + TEST_PORT);
       passed++;
       resolve();
     });

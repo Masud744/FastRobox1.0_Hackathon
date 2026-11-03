@@ -470,14 +470,29 @@ function closeQrModal() {
 
 async function checkAIRelocation() {
   try {
-    const res = await fetch('/api/ai/relocation-recommendation/fridge_1');
-    const plan = await res.json();
+    const res = await fetch('/api/ai/clinical-brief/fridge_1');
+    const data = await res.json();
+    const plan = data.plan;
+    const brief = data.brief;
     state.currentPlanId = plan.planId;
 
     const titleEl = document.getElementById('relocationTitle');
     const reasonEl = document.getElementById('relocationReason');
     const btn = document.getElementById('oneClickRelocateBtn');
     const detailsEl = document.getElementById('relocationPlanDetails');
+
+    let briefHtml = '';
+    if (brief && brief.text) {
+      briefHtml = `
+        <div style="margin-top: 1.25rem; padding: 1.2rem; background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-cyan); border-radius: 8px;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.75rem; font-weight: 700; background: var(--accent-cyan); color: #000; padding: 2px 8px; border-radius: 4px;">GROQ AI CLINICAL ADVISOR</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">${brief.source || 'LLM Agent'}</span>
+          </div>
+          <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; white-space: pre-line;">${brief.text}</p>
+        </div>
+      `;
+    }
 
     if (plan.isRelocationRecommended) {
       titleEl.innerHTML = `<span style="color: var(--warning-amber);">⚠ Action Required: Move Batches to ${plan.targetFridgeName}</span>`;
@@ -496,15 +511,21 @@ async function checkAIRelocation() {
             </li>
           `).join('')}
         </ul>
+        ${briefHtml}
       `;
     } else {
       titleEl.textContent = 'Thermal Conditions Optimal';
       reasonEl.textContent = 'All storage compartments are safely maintained at 2–8°C. No relocation required.';
       btn.style.display = 'none';
-      detailsEl.textContent = 'Continuous monitoring active. Relocation advisor will trigger immediately if predictive breach or compressor degradation occurs.';
+      detailsEl.innerHTML = `
+        <div>Continuous monitoring active. Relocation advisor will trigger immediately if predictive breach or compressor degradation occurs.</div>
+        ${briefHtml}
+      `;
     }
     lucide.createIcons();
-  } catch (err) {}
+  } catch (err) {
+    console.error('Error fetching AI relocation:', err);
+  }
 }
 
 async function executeOneClickRelocation() {
