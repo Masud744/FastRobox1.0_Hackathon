@@ -870,9 +870,14 @@ async function loadInventoryData() {
         <td>${statusBadge}</td>
         <td style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);">${b.expiry_date}</td>
         <td>
-          <button class="action-btn" onclick="openQrModal('${b.id}', '${b.name}', '${b.qr_code}')">
-            <i data-lucide="qr-code" style="width: 14px; height: 14px;"></i> View QR
-          </button>
+          <div style="display: flex; gap: 0.4rem; align-items: center;">
+            <button class="action-btn" onclick="openQrModal('${b.id}', '${b.name}', '${b.qr_code}')">
+              <i data-lucide="qr-code" style="width: 14px; height: 14px;"></i> QR
+            </button>
+            <button class="action-btn" onclick="openMoveBatchModal('${b.id}', '${b.name}', '${b.fridge_id}')">
+              <i data-lucide="arrow-right-left" style="width: 14px; height: 14px;"></i> Move
+            </button>
+          </div>
         </td>
       `;
       tbody.appendChild(tr);
@@ -937,6 +942,61 @@ async function handleAddBatchSubmit() {
   } finally {
     submitBtn.disabled = false;
     submitBtn.innerHTML = '<i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> Register Vaccine Batch';
+    lucide.createIcons();
+  }
+}
+
+function openMoveBatchModal(batchId, batchName, currentFridgeId) {
+  if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Pharmacist') {
+    showToast('Permission Denied', 'Only Pharmacists and Admins can move vaccine batches between fridges.', 'warning');
+    return;
+  }
+  document.getElementById('moveBatchId').value = batchId;
+  document.getElementById('moveBatchName').textContent = batchName;
+  document.getElementById('moveBatchCode').textContent = `Batch ID: ${batchId}`;
+  
+  const targetSelect = document.getElementById('moveTargetFridge');
+  targetSelect.value = currentFridgeId === 'fridge_1' ? 'fridge_2' : 'fridge_1';
+
+  document.getElementById('moveBatchModal').classList.add('open');
+  lucide.createIcons();
+}
+
+function closeMoveBatchModal() {
+  document.getElementById('moveBatchModal').classList.remove('open');
+}
+
+async function handleMoveBatchSubmit() {
+  const batchId = document.getElementById('moveBatchId').value;
+  const targetFridgeId = document.getElementById('moveTargetFridge').value;
+  const submitBtn = document.getElementById('btnMoveBatchSubmit');
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:8px; height:8px;"></span> Moving Batch...';
+
+  try {
+    const res = await fetch(`/api/batches/${encodeURIComponent(batchId)}/move`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.token}`
+      },
+      body: JSON.stringify({ targetFridgeId })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      closeMoveBatchModal();
+      showToast('Batch Moved!', data.message || `Batch relocated successfully.`, 'success');
+      loadInventoryData();
+      refreshAllData();
+    } else {
+      showToast('Move Failed', data.error || 'Failed to move batch.', 'error');
+    }
+  } catch (err) {
+    showToast('Network Error', 'Error executing batch move request.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i data-lucide="arrow-right-left" style="width: 18px; height: 18px;"></i> Confirm Transfer & Log Audit';
     lucide.createIcons();
   }
 }

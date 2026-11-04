@@ -635,6 +635,37 @@
     </div>
   </div>
 
+  <!-- 7. MOVE BATCH MODAL (Task 4: Manage & move batches between fridges) -->
+  <div class="modal-backdrop" id="moveBatchModal">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>Move Vaccine Batch</h3>
+        <button class="modal-close-btn" onclick="closeMoveBatchModal()">&times;</button>
+      </div>
+
+      <form id="moveBatchForm" onsubmit="event.preventDefault(); handleMoveBatchSubmit();">
+        <input type="hidden" id="moveBatchId">
+        <div style="background: rgba(255,255,255,0.04); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; border: 1px solid var(--border-color);">
+          <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600;">Batch to Relocate</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #ffffff;" id="moveBatchName">---</div>
+          <div style="font-size: 0.85rem; color: var(--accent-cyan); font-family: var(--font-mono);" id="moveBatchCode">---</div>
+        </div>
+
+        <div class="form-group">
+          <label for="moveTargetFridge">Select Destination Storage Unit</label>
+          <select id="moveTargetFridge" required>
+            <option value="fridge_1">Main Cold Room (Fridge 1)</option>
+            <option value="fridge_2">Relocation Reserve (Fridge 2)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btnMoveBatchSubmit">
+          <i data-lucide="arrow-right-left" style="width: 18px; height: 18px;"></i> Confirm Transfer & Log Audit
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- 4. QR CODE DISPLAY MODAL -->
   <div class="modal-backdrop" id="qrModal">
     <div class="modal-box" style="text-align: center;">

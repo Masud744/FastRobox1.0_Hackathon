@@ -290,6 +290,56 @@ app.post('/api/batches', authenticateToken, requireRoles('Pharmacist', 'Admin'),
   }
 });
 
+// MOVE / REASSIGN BATCH BETWEEN FRIDGES (Task 4 requirement)
+app.post('/api/batches/:id/move', authenticateToken, requireRoles('Pharmacist', 'Admin'), (req, res) => {
+  const batchId = req.params.id;
+  const { targetFridgeId } = req.body;
+
+  if (!targetFridgeId) {
+    return res.status(400).json({ error: 'Target fridge ID is required (e.g. fridge_1 or fridge_2)' });
+  }
+
+  const batch = db.prepare('SELECT * FROM vaccine_batches WHERE id = ?').get(batchId);
+  if (!batch) {
+    return res.status(404).json({ error: `Batch '${batchId}' not found.` });
+  }
+
+  const targetFridge = db.prepare('SELECT * FROM fridges WHERE id = ?').get(targetFridgeId);
+  if (!targetFridge) {
+    return res.status(404).json({ error: `Target fridge '${targetFridgeId}' does not exist.` });
+  }
+
+  const prevFridgeId = batch.fridge_id;
+  db.prepare('UPDATE vaccine_batches SET fridge_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(targetFridgeId, batchId);
+
+  // Asynchronously mirror to Supabase
+  try {
+    const { supabase } = require('./supabaseClient');
+    if (supabase) {
+      supabase.from('vaccine_batches').update({ fridge_id: targetFridgeId }).eq('id', batchId).then(({ error }) => {
+        if (error) console.error('[Supabase Mirror] Batch move error:', error.message);
+      });
+    }
+  } catch (e) {}
+
+  appendAuditLog('BATCH_MOVED', { batchId, fromFridge: prevFridgeId, toFridge: targetFridgeId, batchName: batch.name }, req.user.username);
+
+  broadcast({
+    type: 'BATCH_MOVED',
+    batchId,
+    fromFridge: prevFridgeId,
+    toFridge: targetFridgeId
+  });
+
+  res.json({
+    success: true,
+    message: `Batch ${batchId} (${batch.name}) successfully moved to ${targetFridge.name}.`,
+    batchId,
+    fromFridge: prevFridgeId,
+    toFridge: targetFridgeId
+  });
+});
+
 // PUBLIC QR CHECK ROUTE: Zero login required (Task 4 requirement)
 app.get('/api/batches/public-verify/:identifier', (req, res) => {
   const idOrQr = req.params.identifier;
