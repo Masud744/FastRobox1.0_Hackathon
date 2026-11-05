@@ -163,6 +163,7 @@ async function runTests() {
 
   // TEST 9: Power Failure simulation triggers battery alert
   test('Power failure simulation triggers battery mode alert', () => {
+    db.prepare("UPDATE fridges SET power_source = 'GRID' WHERE id = 'fridge_1'").run();
     const powerRes = processDoorAndPowerState('fridge_1', 'CLOSED', 'BATTERY', Date.now());
     assert.strictEqual(powerRes.powerAlertTriggered, true);
 

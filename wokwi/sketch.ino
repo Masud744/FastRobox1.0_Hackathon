@@ -264,10 +264,10 @@ bool lastPowerBtnReading = false;
 void checkDoorAndPowerInputs() {
   unsigned long now = millis();
 
-  // 1. Door Switch: Active LOW (Pressed = Closed, Released = Open)
-  bool currentDoorState = (digitalRead(PIN_DOOR_SWITCH) == HIGH); // HIGH = Door Open
-  if (currentDoorState != doorIsOpen) {
-    doorIsOpen = currentDoorState;
+  // 1. Door Switch: Toggle Open / Closed on click (Click to Open, Click to Close)
+  bool currentDoorBtn = (digitalRead(PIN_DOOR_SWITCH) == LOW); // Pressed = LOW (GND)
+  if (currentDoorBtn && !lastDoorReading) {
+    doorIsOpen = !doorIsOpen;
     if (doorIsOpen) {
       doorOpenedTimestamp = now;
       doorOpenSeconds = 0;
@@ -281,6 +281,7 @@ void checkDoorAndPowerInputs() {
     // Task 1 requirement: "Send MQTT data every 5 seconds and on door-state changes."
     sendTelemetryPacket();
   }
+  lastDoorReading = currentDoorBtn;
 
   // Update door open duration & check >60s breach buzzer
   if (doorIsOpen) {
