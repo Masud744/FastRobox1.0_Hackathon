@@ -1,76 +1,63 @@
 \documentclass[11pt,a4paper]{article}
 
 % =========================================================================
-% PACKAGES & DOCUMENT HYGIENE
+% PACKAGES & DOCUMENT SETUP
 % =========================================================================
 \usepackage[utf8]{inputenc}
-\usepackage[top=20mm,bottom=20mm,left=22mm,right=22mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{graphicx}
-\usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{enumitem}
-\usepackage{tcolorbox}
 \usepackage{microtype}
 \usepackage{caption}
+\usepackage{setspace}
 
-% Semantic Color Palette
-\definecolor{brandblue}{HTML}{005691}
-\definecolor{brandcyan}{HTML}{0891B2}
-\definecolor{darkslate}{HTML}{0F172A}
-\definecolor{safegreen}{HTML}{10B981}
-\definecolor{warnamber}{HTML}{F59E0B}
-\definecolor{breachred}{HTML}{EF4444}
-\definecolor{lightgray}{HTML}{F8FAFC}
-\definecolor{bordergray}{HTML}{E2E8F0}
-\definecolor{codebg}{HTML}{F1F5F9}
-
-% Hyperlink Setup
+% Clean hyperlink styling
 \hypersetup{
     colorlinks=true,
-    linkcolor=brandblue,
-    citecolor=brandblue,
-    urlcolor=brandblue,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=black,
     pdfauthor={Team UFTB-VORQEN},
-    pdftitle={ColdChain Technical Documentation - BUBT FastRobox 1.0 Hackathon}
+    pdftitle={ColdChain Technical Documentation - FastRobox 1.0 IoT Hackathon}
 }
 
-% Header and Footer
+% Line Spacing & Paragraph Formatting
+\setstretch{1.14}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{15pt}
+
+% Running Header and Footer
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small \textbf{FastRobox 1.0 IoT Hackathon 2026} $|$ IEEE BUBT Student Branch}
-\fancyhead[R]{\small Team: \textbf{UFTB-VORQEN}}
-\fancyfoot[L]{\small ColdChain: Vaccine \& Medicine Storage Monitor}
-\fancyfoot[R]{\small Page \thepage}
-\renewcommand{\headrulewidth}{0.5pt}
-\renewcommand{\footrulewidth}{0.5pt}
+\fancyhead[R]{\small\nouppercase{\leftmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
 
-% Section Titles Styling (Single Column)
-\titleformat{\section}{\Large\bfseries\color{brandblue}}{\thesection.}{0.6em}{}[\titlerule]
-\titleformat{\subsection}{\large\bfseries\color{darkslate}}{\thesubsection.}{0.5em}{}
-\titleformat{\subsubsection}{\normalsize\bfseries\color{brandcyan}}{\thesubsubsection.}{0.4em}{}
+% Section Titles Styling (Classic Serif, Clean Black)
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.8em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection}{0.6em}{}
 
-% Custom Callout Boxes
-\tcbset{
-    colback=lightgray,
-    colframe=brandblue,
-    arc=2mm,
-    boxrule=1pt,
-    left=4mm,
-    right=4mm,
-    top=3mm,
-    bottom=3mm
-}
+\titlespacing*{\section}{0pt}{2.0ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+\titlespacing*{\subsection}{0pt}{1.5ex plus 1ex minus .2ex}{0.8ex plus .2ex}
+\titlespacing*{\subsubsection}{0pt}{1.2ex plus 1ex minus .2ex}{0.6ex plus .2ex}
 
+% Figure Caption Styling
 \captionsetup{
     font=small,
-    labelfont={bf,color=brandblue},
+    labelfont=bf,
+    labelsep=colon,
     justification=centering,
-    skip=6pt
+    skip=8pt
 }
 
 % =========================================================================
@@ -78,294 +65,293 @@
 % =========================================================================
 \begin{document}
 
-% --- TITLE BLOCK (NO HEADER IMAGE, CLEAN PROFESSIONAL TYPOGRAPHY) ---
+% --- TITLE BLOCK ---
+\thispagestyle{plain}
 \begin{center}
-    {\LARGE \textbf{\color{brandblue}ColdChain: Autonomous IoT Cold-Chain Monitoring \& Predictive Bio-Thermal Safety Platform}}\\[8pt]
-    {\large \textbf{Comprehensive Engineering Documentation \& Technical Implementation Report}}\\[5pt]
-    {\normalsize \textbf{Event:} BUBT FastRobox 1.0 IoT Hackathon 2026 \quad$|$\quad \textbf{Organized by:} IEEE BUBT Student Branch}\\[4pt]
-    {\normalsize \textbf{Team Identity:} \textbf{\color{brandblue}UFTB-VORQEN} \quad$|$\quad \textbf{Challenge Track:} 100-Point IoT Problem Statement}\\[4pt]
-    {\small \textbf{GitHub Repository:} \href{https://github.com/Masud744/FastRobox1.0_Hackathon}{\texttt{github.com/Masud744/FastRobox1.0\_Hackathon}} \quad$|$\quad \textbf{Date:} November 2026}
+    \vspace*{0.5em}
+    {\Large\bfseries ColdChain: Autonomous IoT Cold-Chain Monitoring and Bio-Thermal Safety Platform}\\[0.8em]
+    {\large\bfseries Project Documentation \& Implementation Report}\\[1.0em]
+    {\normalsize\textbf{Team: UFTB-VORQEN}}\\[0.4em]
+    {\small FastRobox 1.0 IoT Hackathon 2026 \quad$|$\quad 100-Point IoT Challenge}\\[0.3em]
+    {\small November 2026}
 \end{center}
 
-\vspace{2pt}
-\noindent\rule{\textwidth}{1.2pt}
-\vspace{6pt}
+\vspace{1.0em}
+\noindent\rule{\textwidth}{0.5pt}
+\vspace{0.8em}
 
-% --- EXECUTIVE SUMMARY ---
-\begin{tcolorbox}[title=\textbf{Executive Summary}]
-Vaccines, mRNA biologics, and insulin require strict temperature maintenance between $2.0^\circ\text{C}$ and $8.0^\circ\text{C}$. According to World Health Organization (WHO) field audits, improper storage and cold-chain disruptions result in over \$35 billion in lost pharmaceuticals annually. 
+% --- ABSTRACT ---
+\begin{abstract}
+\noindent Therapeutic vaccines, biologics, and insulin require continuous thermal preservation between $2.0^\circ\text{C}$ and $8.0^\circ\text{C}$ to maintain clinical potency. In real-world healthcare storage, unexpected power outages, mechanical refrigeration failures, and unmonitored human handling cause widespread unnoticed spoilage. This report documents the complete engineering solution developed by \textbf{Team UFTB-VORQEN} for the \textbf{FastRobox 1.0 IoT Hackathon}. The system delivers a fully functional cyber-physical cold-chain management infrastructure combining dual ESP32 smart edge nodes, autonomous closed-loop hysteresis compressor control ($7.0^\circ\text{C}$ turn-on, $3.0^\circ\text{C}$ turn-off) with an anti-short-cycling 60-second motor lockout delay, an edge-resident 360-packet circular RAM buffer for 30-minute offline network resilience, a kinetic heat-exposure budget engine applying double penalties ($2\times$) above $12.0^\circ\text{C}$, HMAC-SHA256 authenticated message ingestion, an immutable SHA-256 cryptographic hash-chain audit ledger, a 30-minute predictive temperature trajectory forecasting engine, a 0--100 compressor degradation health score, automated one-click batch relocation, and a zero-login public QR verification interface. All operational invariants have been verified through an automated 33-test integration suite with a 100\% pass rate.
+\end{abstract}
 
-This report presents the complete engineering implementation developed by \textbf{Team UFTB-VORQEN} for the \textbf{BUBT FastRobox 1.0 IoT Hackathon 2026}. The system delivers an end-to-end cyber-physical infrastructure encompassing dual ESP32 smart edge nodes, hysteresis cooling control with motor short-cycle protection, dynamic heat-budget degradation tracking ($2\times$ kinetic acceleration $>12^\circ\text{C}$), a 30-minute offline flash/RAM circular buffer, cryptographic HMAC-SHA256 message signing, an immutable SHA-256 hash-chain audit ledger, 30-minute ahead AI temperature forecasting, compressor thermodynamic health scoring, automated batch evacuation recommendations, and a zero-login public QR inspection portal.
-\end{tcolorbox}
+\vspace{0.8em}
+\noindent\rule{\textwidth}{0.5pt}
+\vspace{1.2em}
 
-\vspace{4pt}
+% --- SECTION 1: PROBLEM STATEMENT & CHALLENGES ---
+\section{Problem Statement and Core Challenges}
 
-% --- SECTION 1: PROBLEM MAPPING & REQUIREMENTS ---
-\section{Problem Statement \& Requirements Traceability}
+\subsection{Problem Formulation}
+Vaccines and insulin are delicate biological formulations composed of complex proteins and lipid structures. When exposed to temperatures outside the safe range of $2.0^\circ\text{C}$ to $8.0^\circ\text{C}$, these pharmaceuticals undergo rapid, irreversible denaturation:
+\begin{itemize}[leftmargin=2em,itemsep=2pt]
+    \item \textbf{mRNA Vaccines (e.g., Pfizer-BioNTech Comirnaty):} The protective lipid nanoparticles disintegrate under elevated heat, exposing the fragile mRNA strand to enzymatic and hydrolytic degradation, completely neutralizing immunogenicity.
+    \item \textbf{Live Attenuated Vaccines (e.g., BCG, MMR):} Elevated temperatures kill the viable attenuated bacteria or viruses, rendering the dose clinically ineffective while appearing visually intact.
+    \item \textbf{Insulin (e.g., Glargine / Lantus):} High temperatures induce peptide unfolding and irreversible fibril aggregation, causing unpredictable glycemic control in diabetic patients.
+\end{itemize}
 
-The 100-Point Hackathon Challenge comprises five explicit, mission-critical engineering tasks. Table~\ref{tab:requirements} maps each task requirement to our technical implementation.
+\subsection{Operational Vulnerabilities in Cold Storage}
+Traditional cold-chain monitoring in clinical settings suffers from four systemic failure modes:
+\begin{enumerate}[label=(\roman*),leftmargin=2em,itemsep=2pt]
+    \item \textbf{Reactive Rather than Proactive Alarms:} Conventional digital thermometers trigger an audible beep only after temperature has already exceeded the safety ceiling, by which time valuable vaccines are already compromised.
+    \item \textbf{Frequent Grid Interruptions and Network Blackouts:} During mains electrical power failure or internet dropouts, conventional IoT loggers cease data transmission, creating blind spots where spoilage occurs unrecorded.
+    \item \textbf{Silent Compressor Failure:} Refrigerant leaks and mechanical wear cause compressors to run continuously without cooling effectively, remaining unnoticed until catastrophic temperature spikes occur.
+    \item \textbf{Data Tampering and Audit Invalidation:} Manual paper logs or unauthenticated databases are vulnerable to retroactive alterations to conceal negligence or avoid discarding expensive pharmaceuticals.
+\end{enumerate}
+
+\subsection{Hackathon Challenge Requirements Traceability}
+To overcome these challenges, the FastRobox 1.0 IoT Hackathon defined five explicit core tasks:
+\begin{itemize}[leftmargin=2em,itemsep=2pt]
+    \item \textbf{Task 1 (Fridge Node):} Dual ESP32 fridges with DHT22 temperature sensor, door switch, compressor relay, status LEDs, local OLED display, 5-second MQTT transmission, and compressor hysteresis ($7^\circ\text{C}$ ON, $3^\circ\text{C}$ OFF, 60s minimum lockout).
+    \item \textbf{Task 2 (Heat-Exposure Budget):} 60-minute cumulative budget above $8^\circ\text{C}$, double-rate counting ($2\times$) above $12^\circ\text{C}$, At Risk status ($<20\%$), Discard status ($0\%$) with persistent red LED alarm latched until administrator reset.
+    \item \textbf{Task 3 (Power Failure \& Offline Mode):} Grid vs Battery switch simulation, 30-minute offline edge memory buffer (360 packets) with order-preserving deduplicated synchronization, and door open $>60\text{s}$ buzzer and remote alert.
+    \item \textbf{Task 4 (ColdChain Web Application):} JWT + bcrypt RBAC (Admin, Pharmacist, Inspector), real-time digital twin dashboard, inventory management with batch transfers, zero-login public QR inspection, HMAC-SHA256 device security, and an immutable hash-chain audit ledger.
+    \item \textbf{Task 5 (AI Breach Prediction \& Relocation):} 30-minute ahead temperature trajectory forecasting, 0--100 compressor degradation health score, automated evacuation recommendations to safe fridges, one-click pharmacist execution, and clinical decision reporting.
+\end{itemize}
+
+% --- SECTION 2: PROJECT OVERVIEW & ARCHITECTURE ---
+\section{Project Overview and System Concept}
+
+\subsection{End-to-End System Architecture}
+The ColdChain platform integrates embedded edge hardware, real-time message brokering, backend business rules, predictive AI modeling, and a web dashboard into a unified architecture:
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item \textbf{Edge Hardware Layer (ESP32 Nodes):} Microcontrollers executing local closed-loop control to monitor temperatures, toggle compressor relays via hysteresis, handle switch debounce, manage local OLEDs, and store readings in circular RAM buffers during network outages.
+    \item \textbf{Transport \& Ingestion Bus (Dual MQTT):} Packets are cryptographically signed with HMAC-SHA256 and transmitted to cloud (HiveMQ) and local (Aedes) brokers every 5 seconds.
+    \item \textbf{Backend Core Engine (Node.js Express):} Ingests verified packets, runs the dynamic heat-exposure budget engine, tracks user sessions via JWT/bcrypt, manages persistent databases (local SQLite with WAL mode + cloud PostgreSQL mirror), and appends state changes to an immutable SHA-256 hash chain.
+    \item \textbf{Predictive Analytics \& Clinical AI Engine:} Analyzes telemetry trends using second-order polynomial extrapolation, computes compressor thermodynamic health ($0$--$100$), generates automated evacuation plans, and provides clinical guidance via Groq Cloud LLM (Qwen 3.8-27B).
+    \item \textbf{Web Application \& Public Inspection Portal:} Delivers real-time digital twin monitoring over WebSockets, role-based batch transfers, cryptographic audit validation, and an unauthenticated public QR verification portal for field clinics and patients.
+\end{enumerate}
+
+\subsection{Dual-Fridge Redundancy Concept}
+The physical layout simulates a multi-compartment medical facility:
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Fridge 1 (Main Cold Room):} Primary storage compartment housing active vaccine inventory under live IoT monitoring.
+    \item \textbf{Fridge 2 (Relocation Reserve):} Secondary standby unit maintained at optimal temperature ($3.0^\circ\text{C}$ to $5.0^\circ\text{C}$) with available storage capacity, dedicated to receive emergency batch transfers when Fridge 1 experiences mechanical degradation or thermal breach.
+\end{itemize}
+
+% --- SECTION 3: IMPLEMENTATION DETAILS ---
+\section{Detailed Implementation}
+
+\subsection{Task 1: Fridge Node Hardware and Closed-Loop Control}
+
+\subsubsection{Hardware Interfacing and Pin Mapping}
+The edge node is built upon an ESP32 DevKit V1 (32-bit dual-core Xtensa @ 240\,MHz). Table~\ref{tab:pinout} details the physical peripheral connections.
 
 \begin{table}[h!]
 \centering
 \small
 \renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\textwidth}{l p{7.5cm} X c}
+\begin{tabularx}{\textwidth}{l l l X}
 \toprule
-\textbf{Task \#} & \textbf{Core Challenge Requirement} & \textbf{Implemented Mechanism} & \textbf{Status} \\
+\textbf{Component} & \textbf{Pin / Interface} & \textbf{Mode} & \textbf{Functional Purpose} \\
 \midrule
-\textbf{Task 1} & Dual ESP32 fridges, DHT22 sensor, door switch, compressor relay, LEDs, OLED display, MQTT 5s reporting, Hysteresis ($7^\circ\text{C}$ ON, $3^\circ\text{C}$ OFF, 60s delay). & Firmware hysteresis engine with 60s lockout timer, SSD1306 display, MQTT telemetry client. & \textbf{100\%} \\
-\addlinespace
-\textbf{Task 2} & 60-min heat budget above $8^\circ\text{C}$, double-rate counting $>12^\circ\text{C}$, At Risk ($<20\%$), Discard ($0\%$) with persistent red LED alarm until admin reset. & Arrhenius-weighted budget engine, state transitions, hardware alarm latching via REST/MQTT. & \textbf{100\%} \\
-\addlinespace
-\textbf{Task 3} & Power failure switch (Grid/Battery), 30-minute offline buffer (360 packets) with ordered sync, door open $>60\text{s}$ buzzer and remote alerts. & Debounced edge switch, circular edge FIFO buffer, non-blocking audio alarm, Telegram/Email/SMS dispatch. & \textbf{100\%} \\
-\addlinespace
-\textbf{Task 4} & JWT+bcrypt RBAC (Admin/Pharmacist/Inspector), live dashboard, inventory management, zero-login public QR verification, HMAC-SHA256, hash-chain audit logs. & Modern dark-mode SaaS SPA, WebSockets, SHA-256 tamper-evident blockchain-style audit ledger, public portal. & \textbf{100\%} \\
-\addlinespace
-\textbf{Task 5} & 30-min ahead temperature prediction, 0--100 compressor health score, automated batch relocation advice, 1-click pharmacist confirmation, AI report. & Polynomial trajectory regression, $\Delta T / \Delta t$ cooling rate index, slot-aware relocation engine, Groq LLM integration. & \textbf{100\%} \\
+DHT22 Sensor & GPIO 4 & Digital I/O & Calibrated temperature and humidity measurement. \\
+SSD1306 OLED (128$\times$64) & GPIO 21 (SDA), 22 (SCL) & I2C Bus & Real-time local display of temperature, status, and power. \\
+Compressor Relay & GPIO 5 & Digital Output & Optocoupled switching of refrigeration compressor circuit. \\
+Green Status LED & GPIO 14 & Digital Output & Visual indicator for normal/safe storage ($2$--$8^\circ\text{C}$). \\
+Red Alarm LED & GPIO 2 & Digital Output & Latched indicator for biological batch discard alarm. \\
+Piezo Buzzer & GPIO 13 & Digital Output & Audible alarm when door remains open $>60$\,seconds. \\
+Door Position Switch & GPIO 18 & Digital In (Pullup) & Monitored door state with edge toggle latching. \\
+Power Selector Switch & GPIO 19 & Digital In (Pullup) & AC Grid vs Battery backup selector switch. \\
 \bottomrule
 \end{tabularx}
-\caption{Traceability matrix of hackathon requirements against delivered implementation.}
-\label{tab:requirements}
-\end{table}
-
-% --- SECTION 2: SYSTEM ARCHITECTURE ---
-\section{System Architecture \& Concept Overview}
-
-The ColdChain platform operates across five interconnected structural tiers:
-\begin{enumerate}[leftmargin=*]
-    \item \textbf{Cyber-Physical Edge Tier (ESP32 Nodes):} Microcontroller interfacing directly with environmental sensors (DHT22), user interaction switches (Door, Power), actuators (Relay, Buzzer, Status LEDs), and an I2C OLED display. Executes autonomous closed-loop hysteresis control independent of cloud connectivity.
-    \item \textbf{Secure Transport Tier (Dual MQTT Architecture):} Microcontroller signs every telemetry message using HMAC-SHA256 and streams packets via MQTT every 5 seconds to HiveMQ Public Broker (\texttt{broker.hivemq.com:1883}) and a local embedded Aedes MQTT broker for cloud-independent operations.
-    \item \textbf{Backend Ingestion \& State Engine:} Node.js/Express server validating packet signatures, rejecting replays, evaluating the dynamic heat-exposure budget, and managing an immutable SHA-256 hash-chain ledger.
-    \item \textbf{Predictive AI \& Clinical Advisor Tier:} Real-time analytical service computing 30-minute temperature extrapolations, compressor degradation metrics, automated relocation routes, and clinical emergency guidance via Groq Cloud LLM (Qwen 3.8-27B).
-    \item \textbf{Presentation \& Public Verification Tier:} Real-time WebSocket-powered dashboard featuring dual digital twins, inventory controls, audit ledger inspector, and a zero-login public safety portal accessible via standard QR codes.
-\end{enumerate}
-
-% --- SECTION 3: HARDWARE & FIRMWARE (TASK 1 & TASK 3) ---
-\section{Edge Hardware \& Firmware Implementation (Tasks 1 \& 3)}
-
-\subsection{Microcontroller Pin Mapping \& Interfacing}
-The primary node utilizes an ESP32 DevKit V1 (32-bit Xtensa dual-core running at 240\,MHz). Circuit interfacing is detailed in Table~\ref{tab:pinout}.
-
-\begin{table}[h!]
-\centering
-\small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabularx}{0.9\textwidth}{l l l X}
-\toprule
-\textbf{Component} & \textbf{Interface / GPIO} & \textbf{Mode} & \textbf{Functional Purpose} \\
-\midrule
-DHT22 Sensor & GPIO 4 & Digital I/O & Calibrated temperature \& relative humidity acquisition. \\
-SSD1306 OLED (128x64) & GPIO 21 (SDA), 22 (SCL) & I2C Bus & Real-time display of temperature, status, comp \& power. \\
-Compressor Relay & GPIO 5 & Digital Output & Active-HIGH control of refrigeration cooling circuit. \\
-Green LED & GPIO 14 & Digital Output & Normal / Safe operating state indicator. \\
-Red LED & GPIO 2 & Digital Output & Latched critical Discard alarm indicator. \\
-Piezo Buzzer & GPIO 13 & Digital Output & Acoustic alert for door open $>60$\,s. \\
-Door Limit Switch & GPIO 18 & Input (Pullup) & Monitored door state with edge toggle latching. \\
-Power Source Switch & GPIO 19 & Input (Pullup) & AC Grid vs Battery backup selector switch. \\
-\bottomrule
-\end{tabularx}
-\caption{ESP32 hardware pin assignments and component interfaces.}
+\caption{Hardware pinout and peripheral interfacing for the ESP32 fridge node.}
 \label{tab:pinout}
 \end{table}
 
-\subsection{Autonomous Compressor Hysteresis Control}
-To prevent thermal overshoot while safeguarding the compressor motor against short-cycling, the firmware implements the following state-machine rules:
-\begin{align}
-    \text{Relay State} = \begin{cases}
-        \text{ON}, & \text{if } T \ge 7.0^\circ\text{C} \text{ and } (t_{\text{current}} - t_{\text{last\_off}} \ge 60\,\text{s}) \\
-        \text{OFF}, & \text{if } T \le 3.0^\circ\text{C} \\
-        \text{Unchanged}, & \text{if } 3.0^\circ\text{C} < T < 7.0^\circ\text{C}
+\subsubsection{Autonomous Closed-Loop Compressor Hysteresis}
+To prevent thermal excursions while protecting the mechanical compressor motor from rapid switching damage, the firmware executes an autonomous hysteresis control algorithm:
+\begin{equation}
+    S_{\text{relay}}(t) = \begin{cases}
+        1 \; (\text{ON}), & \text{if } T(t) \ge 7.0^\circ\text{C} \quad \text{and} \quad (t - t_{\text{last\_off}} \ge 60\,\text{s}) \\
+        0 \; (\text{OFF}), & \text{if } T(t) \le 3.0^\circ\text{C} \\
+        S_{\text{relay}}(t - \Delta t), & \text{if } 3.0^\circ\text{C} < T(t) < 7.0^\circ\text{C}
     \end{cases}
-\end{align}
-If the temperature reaches or exceeds $7.0^\circ\text{C}$, the compressor is inhibited from energizing until the mandatory 60-second minimum off-time delay ($t_{\text{off-delay}}$) has elapsed.
+\end{equation}
+When the temperature reaches $7.0^\circ\text{C}$, the compressor is commanded ON only if at least 60 seconds have elapsed since it was last turned OFF ($t_{\text{last\_off}}$). This 60-second anti-short-cycling delay protects the refrigeration motor against high startup back-pressure.
 
-\begin{figure}[h!]
+\begin{figure}[t!]
 \centering
 \includegraphics[width=0.92\textwidth]{images/wokwi_hardware.png}
-\caption{Wokwi simulated dual-fridge node: ESP32 DevKit, DHT22 sensor, SSD1306 OLED ($3.1^\circ\text{C}$ SAFE), Compressor Relay (Active), Status LEDs, Door/Power switches, and Piezo Buzzer.}
+\caption{Wokwi simulated fridge node: ESP32 DevKit, DHT22 sensor, SSD1306 OLED ($3.1^\circ\text{C}$ SAFE), active compressor relay, status LEDs, door limit switch, power selector, and piezo buzzer.}
 \label{fig:wokwi_hardware}
 \end{figure}
 
-\subsection{Power Failure \& 30-Minute Edge Buffering (Task 3)}
-When the power selector (GPIO 19) indicates an AC Grid blackout, the node transitions to battery backup mode, flagging \texttt{"power": "BATTERY"} in telemetry. 
+\subsection{Task 2: Heat-Exposure Budget Engine}
 
-During network outages (Wi-Fi or MQTT broker unreachable), the firmware shifts into offline resilience mode. Readings are pushed into a circular FIFO buffer allocated in ESP32 static RAM:
+\subsubsection{Kinetic Budget Decay and Double Penalties}
+Every vaccine batch is provisioned with a 60.0-minute ($3600\,\text{s}$) heat-exposure budget above $8.0^\circ\text{C}$. In accordance with Arrhenius chemical degradation kinetics, when temperatures exceed $12.0^\circ\text{C}$, the consumption rate doubles ($2\times$):
 \begin{equation}
-    N_{\text{capacity}} = \frac{30\,\text{min} \times 60\,\text{s/min}}{5\,\text{s/packet}} = 360\,\text{packets}
-\end{equation}
-Each entry encapsulates a 64-bit millisecond epoch timestamp, temperature, compressor state, door status, power source, and sequential nonce. Upon reconnecting to the MQTT broker, the firmware flushes the queued records in strictly chronological order. The server tracks received nonces to guarantee zero data loss and eliminate duplicates.
-
-\begin{figure}[h!]
-\centering
-\includegraphics[width=0.92\textwidth]{images/wokwi_serial_buffer.png}
-\caption{Wokwi Serial Monitor: Autonomous compressor hysteresis activation at $15.1^\circ\text{C}$ satisfying the 60s motor lockout delay, followed by offline buffer storage during network blackout.}
-\label{fig:wokwi_buffer}
-\end{figure}
-
-% --- SECTION 4: HEAT-EXPOSURE BUDGET (TASK 2) ---
-\section{Heat-Exposure Budget Engine (Task 2)}
-
-Biologics deteriorate non-linearly under thermal stress. The system implements a dynamic cumulative heat-exposure budget initialized to 60.0 minutes ($3600\,\text{s}$) for each vaccine batch. 
-
-\subsection{Degradation Kinetics \& Penalties}
-When storage temperature exceeds the $8.0^\circ\text{C}$ critical threshold, the remaining budget decreases. In compliance with Arrhenius-accelerated chemical degradation kinetics, excursions exceeding $12.0^\circ\text{C}$ are penalized at double rate ($2\times$):
-\begin{equation}
-    \frac{dB}{dt} = \begin{cases}
-        0, & T \le 8.0^\circ\text{C} \\
-        -1.0, & 8.0^\circ\text{C} < T \le 12.0^\circ\text{C} \\
-        -2.0, & T > 12.0^\circ\text{C}
+    \frac{dB(t)}{dt} = \begin{cases}
+        0, & T(t) \le 8.0^\circ\text{C} \\
+        -1.0\,\text{s/s}, & 8.0^\circ\text{C} < T(t) \le 12.0^\circ\text{C} \\
+        -2.0\,\text{s/s}, & T(t) > 12.0^\circ\text{C}
     \end{cases}
 \end{equation}
+where $B(t)$ represents the remaining budget in seconds.
 
-\subsection{State Transition \& Hardware Alarm Latching}
-The lifecycle of every vaccine batch is evaluated continuously against three thresholds:
-\begin{itemize}[leftmargin=*]
-    \item \textbf{SAFE:} $B(t) > 12.0\,\text{minutes}$ ($> 20\%$). Potency certified.
-    \item \textbf{AT RISK:} $0.0 < B(t) \le 12.0\,\text{minutes}$ ($\le 20\%$). Warning surfaced on dashboard; candidate for immediate relocation.
-    \item \textbf{DISCARD:} $B(t) = 0.0\,\text{minutes}$ ($0\%$). Biological potency irreparably compromised.
+\subsubsection{State Transitions and Persistent Red LED Alarm}
+The batch health progresses through three operational states:
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{SAFE:} $B(t) > 12.0\,\text{minutes}$ ($> 20\%$). Potency guaranteed; routine storage.
+    \item \textbf{AT RISK:} $0.0\,\text{minutes} < B(t) \le 12.0\,\text{minutes}$ ($\le 20\%$). Warning surfaced; high priority for relocation.
+    \item \textbf{DISCARD:} $B(t) = 0.0\,\text{minutes}$ ($0\%$). Biological potency destroyed.
 \end{itemize}
-When any batch enters the \texttt{DISCARD} state, the backend commands the ESP32 to illuminate the physical Red LED (GPIO 2). The LED remains latched in the active alarm state even if the temperature returns to the safe $2$--$8^\circ\text{C}$ range. Deactivation requires an explicit cryptographic reset command issued by an authenticated system Administrator.
+Upon reaching the \texttt{DISCARD} state, the backend transmits a latch command to the ESP32, illuminating the physical Red LED (GPIO 2). The Red LED remains latched ON continuously even if the temperature subsequently drops back into the safe $2$--$8^\circ\text{C}$ range. The alarm can be reset only by an authenticated Administrator via the web dashboard.
 
-\begin{figure}[h!]
+\begin{figure}[t!]
 \centering
 \includegraphics[width=0.92\textwidth]{images/dashboard_inventory.png}
-\caption{Vaccine Batch Inventory dashboard showing real-time heat-exposure budget bars, expiry dates, clinical status (SAFE vs DISCARD), batch creation modal, and instant QR verification triggers.}
+\caption{Vaccine batch inventory dashboard displaying heat-exposure budget progress bars, expiry dates, clinical status (SAFE vs DISCARD), and public QR code triggers.}
 \label{fig:inventory}
 \end{figure}
 
-% --- SECTION 5: SECURITY, AUDIT & WEB APP (TASK 4) ---
-\section{Web Application, Security \& Tamper-Evident Ledger (Task 4)}
+\subsection{Task 3: Power Failure Resilience and Edge Buffering}
 
-\subsection{Full-Stack Architecture \& Access Control}
-The web application is built on an asynchronous Node.js Express backend coupled with a responsive, single-page application frontend styled with CSS custom properties and HSL tokens. Bi-directional WebSockets (\texttt{ws://}) stream live telemetry updates to connected clients with sub-100ms latency.
+\subsubsection{Power Mode Detection and Immediate Alerting}
+When the power toggle switch (GPIO 19) transitions from AC Grid to Battery backup, the firmware immediately flags \texttt{"power": "BATTERY"} in the telemetry packet. The backend detects this transition and raises a high-priority power-loss alert on the dashboard.
 
-Role-Based Access Control (RBAC) enforces strict authorization at the API route boundary:
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Administrator:} Full system administration, batch creation, user provisioning, and physical hardware alarm reset.
-    \item \textbf{Pharmacist:} Clinical inventory management, manual fridge-to-fridge batch transfers, and 1-click execution of AI relocation plans.
+\subsubsection{30-Minute Circular Edge RAM Buffer}
+During network disconnections (loss of Wi-Fi association or broker failure), the firmware switches to offline buffering mode, saving readings into a circular FIFO queue in ESP32 static RAM:
+\begin{equation}
+    N_{\text{capacity}} = \frac{30\,\text{min} \times 60\,\text{s/min}}{5\,\text{s/packet}} = 360\,\text{packets}
+\end{equation}
+Each queued record stores a 64-bit epoch timestamp, temperature, compressor state, door status, power source, and sequential nonce. When network connectivity is restored, the buffer flushes all stored readings in strictly chronological FIFO order. The backend tracks nonce indexes to deduplicate packets and prevent lost telemetry.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=0.92\textwidth]{images/wokwi_serial_buffer.png}
+\caption{Wokwi Serial Monitor output showing compressor activation at $15.1^\circ\text{C}$ after the 60-second motor delay, followed by sequential circular edge buffer storage during network blackout.}
+\label{fig:wokwi_buffer}
+\end{figure}
+
+\subsubsection{Door Open Alarm Transduction}
+If the door limit switch (GPIO 18) remains open for more than 60 consecutive seconds, the ESP32 fires the local piezo buzzer (GPIO 13) and flags the event in telemetry, triggering automated dispatch of remote notifications via Telegram, Email, and SMS.
+
+\subsection{Task 4: Web Application, Device Security, and Audit Ledger}
+
+\subsubsection{Full-Stack Architecture and RBAC}
+The web application is implemented in Node.js Express with native WebSockets for sub-100ms telemetry streaming. The user interface uses SaaS dark-mode styling with frosted glassmorphism. Role-Based Access Control (RBAC) enforces strict authorization:
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Administrator:} Full system configuration, batch creation, user provisioning, and physical Red LED alarm reset authorization.
+    \item \textbf{Pharmacist:} Clinical inventory management, manual fridge-to-fridge batch transfers, and 1-click execution of AI-recommended batch relocations.
     \item \textbf{Inspector:} Read-only audit ledger inspection, cryptographic integrity verification, and compliance validation.
 \end{itemize}
 
-\subsection{Edge Security: HMAC-SHA256 \& Replay Defense}
-Every telemetry packet transmitted by the ESP32 includes a message authentication code computed over a pre-shared secret key ($K$):
+\subsubsection{Device Security: HMAC-SHA256 and Replay Defense}
+Every telemetry payload from the ESP32 is signed using HMAC-SHA256 with a pre-shared secret key ($K$):
 \begin{equation}
     \sigma = \text{HMAC-SHA256}(K, \; T \parallel \text{door} \parallel \text{pwr} \parallel \text{comp} \parallel \tau \parallel \text{nonce})
 \end{equation}
-Upon ingestion, the server verifies:
-\begin{enumerate}[leftmargin=*]
-    \item \textbf{Authenticity:} Recalculates $\sigma$ and rejects mismatched payloads with HTTP 401.
-    \item \textbf{Freshness:} Rejects packets where $|\tau_{\text{server}} - \tau| > 300\,\text{seconds}$.
-    \item \textbf{Uniqueness:} Maintains an in-memory sliding window of nonces; replayed tokens are discarded immediately.
-\end{enumerate}
+The server validates: (i) cryptographic signature authenticity, (ii) timestamp freshness ($|\tau_{\text{server}} - \tau| \le 300\,\text{seconds}$), and (iii) strict nonce monotonicity ($\text{nonce} > \text{nonce}_{\text{last}}$), completely rejecting replayed or manipulated packets.
 
-\subsection{Cryptographic Hash-Chain Audit Ledger}
-To meet regulatory data integrity standards (FDA 21 CFR Part 11 and WHO Annex 9), all critical state changes (breaches, relocations, logins, resets) are appended to a linear cryptographic hash chain:
+\subsubsection{Cryptographic Hash-Chain Audit Ledger}
+All critical events (thermal breaches, batch relocations, user logins, alarm resets) are appended to an immutable linear SHA-256 hash chain:
 \begin{equation}
-    \mathcal{H}_i = \text{SHA256}\left(i \;\|\; \tau_i \;\|\; \text{EventType}_i \;\|\; \text{Actor}_i \;\|\; \text{Payload}_i \;\|\; \mathcal{H}_{i-1}\right)
+    H_i = \text{SHA-256}\left(i \;\|\; \tau_i \;\|\; \text{EventType}_i \;\|\; \text{Actor}_i \;\|\; \text{Payload}_i \;\|\; H_{i-1}\right)
 \end{equation}
-The dashboard includes an interactive "Simulate DB Tamper" utility for judges and inspectors, which modifies an arbitrary database row. Clicking "Verify Integrity" causes the verification engine to traverse the chain, instantly flagging the exact block where the hash recalculation fails.
+The web dashboard provides an interactive "Simulate DB Tamper" utility for evaluation, which modifies a past database record. Clicking "Verify Integrity" traverses the chain and pinpoints the exact compromised block within milliseconds.
 
-\begin{figure}[h!]
+\begin{figure}[t!]
 \centering
 \includegraphics[width=0.92\textwidth]{images/dashboard_hashchain.png}
-\caption{Cryptographic Hash-Chain Ledger: Immutable event history displaying block index, timestamp, event type, actor, previous hash, current SHA-256 hash, and the integrity verification tools.}
+\caption{Cryptographic hash-chain audit ledger displaying block indexes, timestamps, actor signatures, previous SHA-256 hashes, current block hashes, and integrity verification tools.}
 \label{fig:hashchain}
 \end{figure}
 
-\subsection{Public Zero-Login QR Safety Portal}
-Every batch is provisioned with a standardized QR code encoding a secure public verification URL: \texttt{/verify/:batchId}. 
+\subsubsection{Zero-Login Public QR Safety Portal}
+Each vaccine batch features a public QR code linking to \texttt{/verify/:batchId}. Without entering any credentials, field health workers, couriers, or patients can scan the vial to inspect the official vaccine name, manufacturer, expiration date, remaining heat budget, and cryptographic verification status.
 
-Field health workers, distribution couriers, or end-recipients can scan the physical vial using any smartphone camera without logging in. The responsive public portal displays the official vaccine name, manufacturer, expiration date, remaining heat budget, current storage location, and on-chain cryptographic verification status.
-
-\begin{figure}[h!]
+\begin{figure}[t!]
 \centering
-\includegraphics[width=0.65\textwidth]{images/dashboard_qr_portal.png}
-\caption{Zero-Login Public QR Safety Portal showing the verified safety certificate for Pfizer-BioNTech Comirnaty (Batch BATCH-CV19-001) with explicit heat exposure exceeded warning.}
+\includegraphics[width=0.62\textwidth]{images/dashboard_qr_portal.png}
+\caption{Zero-login public QR verification interface displaying the authenticated safety certificate for Pfizer-BioNTech Comirnaty (Batch BATCH-CV19-001) with explicit heat exposure exceeded warning.}
 \label{fig:qr_portal}
 \end{figure}
 
-% --- SECTION 6: AI BREACH PREDICTION & RELOCATION (TASK 5) ---
-\section{AI Predictive Breach \& Autonomous Relocation (Task 5)}
+\subsection{Task 5: AI Predictive Breach and Autonomous Relocation}
 
-\subsection{30-Minute Temperature Trajectory Forecasting}
-Rather than relying purely on reactive alarms, the AI engine projects temperature trajectories 30 minutes into the future. A least-squares second-order polynomial estimator fits the sliding telemetry window $[T_{t-k}, \dots, T_t]$:
+\subsubsection{30-Minute Temperature Trajectory Forecasting}
+The AI engine forecasts future temperatures 30 minutes in advance using a second-order polynomial estimator over a sliding window of historical telemetry $[T_{t-k}, \dots, T_t]$:
 \begin{equation}
-    \hat{T}(t + \Delta t) = \alpha \Delta t^2 + \beta \Delta t + T(t), \quad \text{where } \Delta t = 30\,\text{min}
+    \hat{T}(t + \Delta t) = a \Delta t^2 + b \Delta t + T(t), \quad \Delta t = 30\,\text{minutes}
 \end{equation}
-If the extrapolated temperature $\hat{T}(t + 30\,\text{min}) > 8.0^\circ\text{C}$, the system issues an early warning on the live dashboard well before the physical breach occurs, providing staff an operational window for preventative intervention.
+If the extrapolated temperature $\hat{T}(t + 30\,\text{min}) > 8.0^\circ\text{C}$, the system surfaces an early warning on the live dashboard well before the physical breach occurs, providing staff an operational window for preventative intervention.
 
-\begin{figure}[h!]
+\begin{figure}[t!]
 \centering
 \includegraphics[width=0.92\textwidth]{images/dashboard_live_breach.png}
-\caption{Live Monitor Dashboard during simulated emergency: Fridge 1 at $19.4^\circ\text{C}$ under battery backup with door open alert, 30-min AI prediction warning ($26.9^\circ\text{C}$), and degraded compressor health ($10/100$).}
+\caption{Live monitor interface during simulated thermal excursion: Fridge 1 at $19.4^\circ\text{C}$ on battery power with door open alert, 30-minute predictive forecast warning ($26.9^\circ\text{C}$), and degraded compressor health index ($10/100$).}
 \label{fig:live_breach}
 \end{figure}
 
-\subsection{Compressor Health Degradation Scoring (0--100)}
-The health score evaluates thermodynamic cooling performance when the compressor relay is energized. The observed rate of cooling is computed as:
+\subsubsection{Compressor Health Degradation Index (0--100)}
+The health score tracks mechanical cooling performance by measuring the observed cooling rate when the compressor relay is energized:
 \begin{equation}
-    R_{\text{cool}} = \left| \frac{\Delta T}{\Delta t} \right|_{\text{Compressor}=\text{ON}}
+    R_{\text{cool}} = \left| \frac{\Delta T}{\Delta t} \right|_{S_{\text{relay}}=1}
 \end{equation}
-Under nominal conditions, clean refrigeration systems yield $R_{\text{cool}} \ge 0.5^\circ\text{C}/\text{min}$, corresponding to a Health Score of $100/100$. When refrigerant leaks, coil fouling, or motor wear degrade performance ($R_{\text{cool}} \le 0.1^\circ\text{C}/\text{min}$), the health score drops below $20/100$, triggering a \texttt{CRITICAL\_FAILURE} status.
+Under nominal mechanical conditions, clean evaporator coils and adequate refrigerant produce $R_{\text{cool}} \ge 0.5^\circ\text{C/min}$, mapping to a Health Score of $100/100$. When mechanical wear, valve leakage, or refrigerant depletion impairs cooling ($R_{\text{cool}} \le 0.1^\circ\text{C/min}$), the health index drops to $10/100$, triggering a \texttt{CRITICAL\_FAILURE} advisory on the dashboard.
 
-\subsection{Autonomous Relocation Algorithm \& 1-Click Confirmation}
-When a primary fridge exhibits a predicted thermal breach or critical compressor degradation, the relocation engine evaluates candidate secondary units (Fridge 2). The algorithm verifies:
-\begin{enumerate}[leftmargin=*]
-    \item Target unit current temperature $T_{\text{target}} \le 5.0^\circ\text{C}$.
+\subsubsection{Autonomous Relocation Optimization and 1-Click Execution}
+When Fridge 1 exhibits an anticipated thermal breach ($\hat{T}_{30} > 8.0^\circ\text{C}$) or severe compressor degradation ($\text{Health} < 40$), the relocation engine automatically evaluates secondary compartments. The selection algorithm enforces three constraints:
+\begin{enumerate}[label=(\alph*),leftmargin=2em,itemsep=2pt]
+    \item Candidate compartment temperature $T_{\text{target}} \le 5.0^\circ\text{C}$.
     \item Target compressor health score $\ge 80/100$.
-    \item Storage slot availability for the at-risk batches.
+    \item Unallocated volumetric capacity sufficient for the incoming batch volume.
 \end{enumerate}
-The generated relocation plan is displayed on the pharmacist's console. With a single click on "Execute Relocation Protocol", the batch records are transferred atomically in the database, logged to the hash chain, and updated across the live digital twins.
+Upon validating Fridge 2 as a qualified host, the engine drafts an evacuation manifest. A single click by the authenticated Pharmacist on "Confirm Relocation" updates database records atomically, generates an immutable hash-chain audit event, and refreshes the digital twin dashboard without requiring manual data entry.
 
-\begin{figure}[h!]
+\begin{figure}[t!]
 \centering
 \includegraphics[width=0.92\textwidth]{images/dashboard_ai_relocation.png}
-\caption{AI Relocation console featuring the Autonomous Evacuation Assessment and real-time clinical guidance generated by the integrated Groq Cloud LLM (Qwen 3.8-27B).}
+\caption{AI Relocation management console featuring the Autonomous Evacuation Assessment and real-time clinical guidance generated by the integrated Groq Cloud LLM (Qwen 3.8-27B).}
 \label{fig:ai_relocation}
 \end{figure}
 
-\subsection{Groq Cloud LLM Clinical Emergency Advisor}
-An integration with Groq Cloud accelerates inference using the Qwen 3.8-27B model. During thermal excursion events, the advisor analyzes the exact temperature history, elapsed excursion time, and biologics profile (mRNA vs live-attenuated vs recombinant) to generate clinical directives covering protein denaturation risks and handling procedures.
+\subsubsection{Groq Cloud Clinical Decision Support Integration}
+To provide clinical context during complex thermal breaches, the platform integrates Groq Cloud API inference powering the Qwen 3.8-27B language model. During excursion events, the model analyzes the specific biopharmaceutical classification (e.g., mRNA, live-attenuated, recombinant), cumulative excursion duration, and current temperature gradient to generate structured clinical directives concerning protein denaturation risks, quaternary structure loss, and regulatory reporting procedures.
 
-% --- SECTION 7: EXPERIMENTAL VERIFICATION & TEST RESULTS ---
-\section{Experimental Verification \& Test Results}
+% --- SECTION 4: SYSTEM VERIFICATION & TEST RESULTS ---
+\section{System Verification and Test Results}
 
-The complete system underwent rigorous automated test verification using Mocha and Chai assertion suites. The suite covers all five competition tasks across 33 automated test cases, executing in under 3.2 seconds.
+System validation was executed using an automated integration test suite constructed with the Mocha framework and Chai assertion libraries. The test matrix evaluates all invariants defined in the hackathon challenge across 33 test cases, completing execution in under 3.2 seconds. Results are tabulated in Table~\ref{tab:test_matrix}.
 
 \begin{table}[h!]
 \centering
 \small
 \renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\textwidth}{l l p{8.5cm} c}
+\begin{tabularx}{\textwidth}{l c X c}
 \toprule
-\textbf{Task Suite} & \textbf{Tests} & \textbf{Core Invariants Verified} & \textbf{Result} \\
+\textbf{Test Phase} & \textbf{Cases} & \textbf{Target Verification Criteria} & \textbf{Outcome} \\
 \midrule
-Phase 1 & 11 / 11 & JWT creation, bcrypt verification, RBAC permissions, Fridge state persistence, Batch initialization, Telemetry schema validity. & \textbf{PASSED} \\
+Phase 1: Foundations & 11 / 11 & User registration, bcrypt hash verification, JWT issuance, RBAC permission guards, fridge digital twin state, batch initialization. & \textbf{PASSED} \\
 \addlinespace
-Phase 2 & 10 / 10 & 60-min heat budget decay, $2\times$ rate $>12^\circ\text{C}$, At Risk/Discard transitions, offline buffer FIFO ordering, deduplication, door $>60\text{s}$ alert, power failure detection. & \textbf{PASSED} \\
+Phase 2: Budget \& Resilience & 10 / 10 & 60-minute budget decay, double rate ($2\times$) above $12^\circ\text{C}$, At Risk ($<20\%$) and Discard ($0\%$) transitions, circular buffer FIFO ordering, deduplication, 60s door alert, power failover. & \textbf{PASSED} \\
 \addlinespace
-Phase 3 & 7 / 7 & HMAC-SHA256 validation, timestamp freshness window, replay attack rejection, SHA-256 hash-chain creation, and deliberate tampering detection. & \textbf{PASSED} \\
+Phase 3: Cryptography & 7 / 7 & HMAC-SHA256 signature verification, 300s temporal freshness rejection, nonce replay prevention, SHA-256 hash-chain block creation, and tampering detection. & \textbf{PASSED} \\
 \addlinespace
-Phase 4 & 5 / 5 & 30-min AI polynomial extrapolation ($>8^\circ\text{C}$ alert), compressor cooling rate calculation (0--100), relocation recommendations, 1-click execution. & \textbf{PASSED} \\
+Phase 4: Predictive AI & 5 / 5 & 30-minute polynomial forecasting, compressor cooling rate index ($0$--$100$), relocation recommendation generation, and one-click execution. & \textbf{PASSED} \\
 \midrule
-\textbf{Total} & \textbf{33 / 33} & \textbf{End-to-End System Integration Verified Across All 5 Challenge Tasks} & \textbf{100\%} \\
+\textbf{Total Verification} & \textbf{33 / 33} & \textbf{Comprehensive End-to-End System Invariant Verification} & \textbf{100\%} \\
 \bottomrule
 \end{tabularx}
-\caption{Summary of automated integration test suite results.}
-\label{tab:test_results}
+\caption{Automated integration test matrix and experimental verification results across all challenge phases.}
+\label{tab:test_matrix}
 \end{table}
 
-% --- SECTION 8: CONCLUSION & SUBMISSION CHECKLIST ---
-\section{Conclusion \& Submission Package}
+% --- SECTION 5: CONCLUSION ---
+\section{Conclusion}
 
-The ColdChain solution by \textbf{Team UFTB-VORQEN} provides a complete, robust, and mathematically sound answer to the BUBT FastRobox 1.0 IoT Hackathon Challenge. By combining embedded edge autonomy (ESP32 hysteresis and 30-minute offline buffering), cryptographic security (HMAC-SHA256 and immutable audit hash chains), predictive AI modeling (temperature forecasting and compressor diagnostics), and an accessible public inspection interface, the system ensures end-to-end biological viability across the entire medical distribution cold chain.
-
-\subsection{Submission Artifacts \& Links}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{GitHub Repository:} \url{https://github.com/Masud744/FastRobox1.0_Hackathon}
-    \item \textbf{Wokwi Live Simulation:} \url{https://wokwi.com/projects/430889982464003073}
-    \item \textbf{Local Web Application:} \texttt{http://localhost:5000} (Credentials: \texttt{admin} / \texttt{admin123}, \texttt{pharmacist} / \texttt{pharma123}, \texttt{inspector} / \texttt{inspect123})
-    \item \textbf{Cloud Database:} Supabase PostgreSQL 17 mirrored instance.
-\end{itemize}
+The ColdChain platform engineered by \textbf{Team UFTB-VORQEN} provides a complete, robust, and dependable cyber-physical solution to cold-chain preservation challenges. By combining autonomous embedded edge control with motor protection, kinetic heat-exposure budget modeling, cryptographic HMAC message authentication, immutable blockchain-style audit logging, predictive machine learning forecasting, and public QR inspection accessibility, the system transforms cold-chain monitoring from a passive, error-prone manual logging task into an automated, tamper-proof biological assurance infrastructure. Full automated verification across 33 integration tests confirms that all functional and security objectives set forth in the 100-point FastRobox 1.0 IoT Hackathon challenge have been fulfilled.
 
 \end{document}
